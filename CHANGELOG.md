@@ -3,6 +3,12 @@
 All notable changes to **socdl** will be documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.1] — 2026-01-XX
+
+### Changed
+- Enabled PyPI Trusted Publishing so tagged releases are automatically
+  uploaded to <https://pypi.org/project/socdl/>.
+
 ## [0.1.0] — 2026-01-XX
 
 ### Added
