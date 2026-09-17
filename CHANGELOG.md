@@ -3,6 +3,13 @@
 All notable changes to **socdl** will be documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.3] — 2026-01-XX
+
+### Changed
+- Bumped GitHub Actions to current majors to silence Node.js 20 deprecation
+  warnings: `checkout` v7, `setup-python` v7, `upload-artifact` v7,
+  `download-artifact` v8, `action-gh-release` v3.
+
 ## [0.1.2] — 2026-01-XX
 
 ### Added
