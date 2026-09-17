@@ -1,0 +1,50 @@
+name: 🐛 Bug report
+description: Something went wrong with a download or the CLI.
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: socdl version
+      placeholder: "output of: socdl --version"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Windows, macOS, Linux, Other]
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "python --version"
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: URL that failed (redact if private)
+    validations:
+      required: false
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what actually happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Full output / traceback
+      render: shell
+    validations:
+      required: false

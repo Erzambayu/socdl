@@ -1,0 +1,66 @@
+STRINGS = {
+    "app_tagline": "Downloader sosmed yang ramah manusia.",
+    "banner_subtitle": "Instagram | TikTok | YouTube | Twitter/X | Reddit | Facebook",
+
+    "prompt_url": "Paste link (atau command)",
+    "prompt_hint": "Ketik '/help' buat lihat command, '/quit' buat keluar.",
+    "goodbye": "Bye! Jaga diri lo di internet ya.",
+
+    "detecting": "Deteksi platform...",
+    "platform": "Platform",
+    "kind": "Jenis",
+    "engine": "Engine",
+    "folder": "Folder",
+    "url": "URL",
+    "downloading": "Lagi download",
+    "downloaded": "Kelar",
+    "failed": "Gagal",
+    "skipped": "Di-skip",
+    "success": "Beres! Tersimpan di: {path}",
+    "fail_generic": "Ada yang error (exit code {code}).",
+    "no_url": "Gak nemu URL valid. Coba lagi ya.",
+    "unknown_platform": "Platform gak dikenal, coba pake yt-dlp sebagai fallback...",
+
+    "cmd_help_title": "Command interactive",
+    "cmd_help_help": "Tampilin bantuan ini",
+    "cmd_help_quit": "Keluar dari socdl",
+    "cmd_help_config": "Buka/liat config",
+    "cmd_help_history": "Liat download terakhir",
+    "cmd_help_watch": "Nyalain clipboard watcher (auto-download link yg lo copy)",
+    "cmd_help_lang": "Ganti bahasa: /lang en | /lang id",
+    "cmd_help_open": "Buka folder downloads",
+    "cmd_help_paste": "Paste URL dari clipboard",
+
+    "cfg_created": "Config default dibuat di: {path}",
+    "cfg_loaded": "Config di-load dari: {path}",
+    "cfg_saved": "Config tersimpan.",
+    "cfg_invalid": "Config invalid, pake default aja.",
+
+    "hist_empty": "Belom ada history download.",
+    "hist_title": "Download terakhir",
+    "hist_col_when": "Kapan",
+    "hist_col_platform": "Platform",
+    "hist_col_url": "URL",
+    "hist_col_status": "Status",
+
+    "watch_started": "Clipboard watcher jalan. Copy link support apapun -> auto-download.",
+    "watch_stopped": "Clipboard watcher berhenti.",
+    "watch_hint": "Tekan Ctrl+C buat stop.",
+    "watch_detected": "Nemu link di clipboard!",
+    "watch_no_clip": "Clipboard kosong atau format gak didukung.",
+
+    "update_checking": "Cek update...",
+    "update_available": "Ada versi baru: {latest} (sekarang: {current}). Update: pip install -U socdl",
+    "update_uptodate": "Udah versi terbaru ({current}).",
+    "update_fail": "Gak bisa cek update.",
+
+    "dep_missing": "Tool '{name}' belom keinstall. Install: pip install {pkg}",
+    "dep_installing": "Install {pkg} ...",
+    "dep_installed": "{pkg} keinstall.",
+    "dep_install_fail": "Gagal install {pkg}. Install manual dong.",
+
+    "ig_login_needed": "Konten Instagram butuh login. Set username IG di `socdl config` atau edit config.toml.",
+
+    "err_python_too_old": "Butuh Python 3.9+. Sekarang: {version}",
+    "err_unexpected": "Error gak terduga: {err}",
+}

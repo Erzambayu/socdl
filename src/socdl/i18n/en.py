@@ -1,0 +1,66 @@
+STRINGS = {
+    "app_tagline": "Social media downloader for humans.",
+    "banner_subtitle": "Instagram | TikTok | YouTube | Twitter/X | Reddit | Facebook",
+
+    "prompt_url": "Paste a link (or command)",
+    "prompt_hint": "Type '/help' for commands, '/quit' to exit.",
+    "goodbye": "Bye! Stay safe out there.",
+
+    "detecting": "Detecting platform...",
+    "platform": "Platform",
+    "kind": "Kind",
+    "engine": "Engine",
+    "folder": "Folder",
+    "url": "URL",
+    "downloading": "Downloading",
+    "downloaded": "Downloaded",
+    "failed": "Failed",
+    "skipped": "Skipped",
+    "success": "Done! Saved to: {path}",
+    "fail_generic": "Something went wrong (exit code {code}).",
+    "no_url": "No valid URL found. Try again.",
+    "unknown_platform": "Unknown platform, trying yt-dlp as fallback...",
+
+    "cmd_help_title": "Interactive commands",
+    "cmd_help_help": "Show this help",
+    "cmd_help_quit": "Exit socdl",
+    "cmd_help_config": "Open/view config",
+    "cmd_help_history": "Show recent downloads",
+    "cmd_help_watch": "Start clipboard watcher (auto-download links you copy)",
+    "cmd_help_lang": "Switch language: /lang en | /lang id",
+    "cmd_help_open": "Open downloads folder",
+    "cmd_help_paste": "Paste URL from clipboard",
+
+    "cfg_created": "Created default config at: {path}",
+    "cfg_loaded": "Config loaded from: {path}",
+    "cfg_saved": "Config saved.",
+    "cfg_invalid": "Invalid config, using defaults.",
+
+    "hist_empty": "No download history yet.",
+    "hist_title": "Recent downloads",
+    "hist_col_when": "When",
+    "hist_col_platform": "Platform",
+    "hist_col_url": "URL",
+    "hist_col_status": "Status",
+
+    "watch_started": "Clipboard watcher started. Copy any supported link to auto-download.",
+    "watch_stopped": "Clipboard watcher stopped.",
+    "watch_hint": "Press Ctrl+C to stop.",
+    "watch_detected": "Link detected in clipboard!",
+    "watch_no_clip": "Clipboard is empty or unsupported.",
+
+    "update_checking": "Checking for updates...",
+    "update_available": "New version available: {latest} (current: {current}). Run: pip install -U socdl",
+    "update_uptodate": "You're on the latest version ({current}).",
+    "update_fail": "Could not check for updates.",
+
+    "dep_missing": "Required tool '{name}' is not installed. Install: pip install {pkg}",
+    "dep_installing": "Installing {pkg} ...",
+    "dep_installed": "{pkg} installed.",
+    "dep_install_fail": "Failed to install {pkg}. Please install manually.",
+
+    "ig_login_needed": "Instagram content requires login. Configure IG username in `socdl config` or edit config.toml.",
+
+    "err_python_too_old": "Python 3.9+ is required. Current: {version}",
+    "err_unexpected": "Unexpected error: {err}",
+}

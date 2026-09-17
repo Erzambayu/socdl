@@ -1,0 +1,85 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "socdl"
+version = "0.1.0"
+description = "A fast, friendly CLI to download photos & videos from Instagram, TikTok, YouTube, Twitter/X, Reddit, Facebook and more."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Erzam Bayu", email = "erzambayu@users.noreply.github.com" }
+]
+keywords = [
+    "downloader", "instagram", "tiktok", "youtube", "twitter",
+    "reddit", "facebook", "yt-dlp", "instaloader", "gallery-dl", "cli", "tui"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Internet :: WWW/HTTP",
+]
+dependencies = [
+    "rich>=13.7",
+    "click>=8.1",
+    "platformdirs>=4.0",
+    "pyperclip>=1.8",
+    "yt-dlp>=2024.1.0",
+    "gallery-dl>=1.26",
+    "instaloader>=4.11",
+    "tomli>=2.0; python_version<'3.11'",
+    "tomli-w>=1.0",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.5",
+    "mypy>=1.8",
+]
+
+[project.urls]
+Homepage      = "https://github.com/Erzambayu/socdl"
+Repository    = "https://github.com/Erzambayu/socdl"
+Issues        = "https://github.com/Erzambayu/socdl/issues"
+Documentation = "https://github.com/Erzambayu/socdl#readme"
+Changelog     = "https://github.com/Erzambayu/socdl/blob/main/CHANGELOG.md"
+
+[project.scripts]
+socdl = "socdl.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/socdl"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/socdl",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "C4", "SIM"]
+ignore = ["E501", "SIM105"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

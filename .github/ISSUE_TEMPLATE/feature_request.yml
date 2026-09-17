@@ -1,0 +1,22 @@
+name: 💡 Feature request
+description: Suggest a feature or platform to support.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like socdl to do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why is this useful?
+    validations:
+      required: false
+
+  - type: input
+    id: example
+    attributes:
+      label: Example URL / command (if any)
