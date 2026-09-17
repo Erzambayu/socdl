@@ -1,35 +1,147 @@
-name: Release to PyPI
+name: Release
 
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.1.0). Leave empty to use current ref."
+        required: false
 
 permissions:
-  contents: read
-  id-token: write
+  contents: write      # create GitHub Release + upload assets
+  id-token: write      # PyPI trusted publishing (OIDC)
 
 jobs:
-  build:
+  # ---------------------------------------------------------------------------
+  # 1. Build standalone binaries (PyInstaller) for Windows & Linux
+  # ---------------------------------------------------------------------------
+  binaries:
+    name: binary · ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-x64
+            os: windows-latest
+            artifact: socdl-windows-x64.exe
+          - name: linux-x64
+            os: ubuntu-latest
+            artifact: socdl-linux-x64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[build]"
+
+      - name: Build binary (PyInstaller)
+        run: pyinstaller socdl.spec --clean --noconfirm
+
+      # --- Windows post-processing ---
+      - name: Rename (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Copy-Item dist/socdl.exe "dist/${{ matrix.artifact }}"
+
+      # --- Linux post-processing ---
+      - name: Rename (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cp dist/socdl "dist/${{ matrix.artifact }}"
+          chmod +x "dist/${{ matrix.artifact }}"
+
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          dist/socdl.exe --version
+          dist/socdl.exe --help | Select-Object -First 5
+
+      - name: Smoke test (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          ./dist/${{ matrix.artifact }} --version
+          ./dist/${{ matrix.artifact }} --help | head -5
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # 2. Build wheel + sdist for pip users
+  # ---------------------------------------------------------------------------
+  python-package:
+    name: wheel + sdist
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Install build tooling
-        run: python -m pip install --upgrade pip build
-
-      - name: Build wheel + sdist
-        run: python -m build
-
+      - name: Build
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
       - uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: python-dist
           path: dist/
 
-  publish:
-    needs: build
+  # ---------------------------------------------------------------------------
+  # 3. Create the GitHub Release and attach all assets
+  # ---------------------------------------------------------------------------
+  release:
+    name: publish GitHub Release
+    needs: [binaries, python-package]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Download python package
+        uses: actions/download-artifact@v4
+        with:
+          name: python-dist
+          path: artifacts/python-dist
+
+      - name: List artifacts
+        run: find artifacts -type f | sort
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: socdl ${{ github.event.inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            artifacts/socdl-windows-x64.exe/socdl-windows-x64.exe
+            artifacts/socdl-linux-x64/socdl-linux-x64
+            artifacts/python-dist/*
+
+  # ---------------------------------------------------------------------------
+  # 4. Publish to PyPI (only on tag pushes, requires trusted publishing setup)
+  # ---------------------------------------------------------------------------
+  pypi:
+    name: publish PyPI
+    needs: [python-package]
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -37,7 +149,6 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: python-dist
           path: dist/
-
       - uses: pypa/gh-action-pypi-publish@release/v1

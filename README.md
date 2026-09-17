@@ -30,6 +30,26 @@ _Read this in another language: [🇮🇩 Bahasa Indonesia](#-bahasa-indonesia)_
 
 ## 📦 Install
 
+### ⚡ One-liner (no Python required)
+
+**Windows** (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/Erzambayu/socdl/main/install.ps1 | iex
+```
+
+**Linux / macOS** (bash):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Erzambayu/socdl/main/install.sh | bash
+```
+
+The installers download the standalone binary from the latest
+[release](https://github.com/Erzambayu/socdl/releases), put it on your `PATH`,
+and fall back to `pip` automatically if a binary isn't available.
+
+### 🐍 Via Python package managers
+
 ```bash
 pip install socdl
 ```
@@ -40,7 +60,25 @@ Or with [pipx](https://pipx.pypa.io/) (recommended, isolated env):
 pipx install socdl
 ```
 
-**System requirement:** Python 3.9+ and (optional but recommended) [ffmpeg](https://ffmpeg.org/) for best YouTube quality.
+### 📥 Manual download (standalone binary)
+
+Grab the binary for your platform from the
+[latest release](https://github.com/Erzambayu/socdl/releases/latest):
+
+| Platform      | Asset                    |
+|---------------|--------------------------|
+| Windows x64   | `socdl-windows-x64.exe`  |
+| Linux x64     | `socdl-linux-x64`        |
+
+```bash
+# Linux — make it executable and run
+chmod +x socdl-linux-x64
+./socdl-linux-x64 --help
+```
+
+**Requirements:** _none_ for the standalone binary. For `pip` install you need
+Python 3.9+. Either way, [ffmpeg](https://ffmpeg.org/) is **optional but
+recommended** for best YouTube quality.
 
 <details>
 <summary><b>Installing ffmpeg</b></summary>
@@ -245,13 +283,29 @@ MIT © [Erzam Bayu](https://github.com/Erzambayu)
 
 ### Install
 
+**One-liner (tanpa Python):**
+
+```powershell
+# Windows (PowerShell):
+irm https://raw.githubusercontent.com/Erzambayu/socdl/main/install.ps1 | iex
+```
+
+```bash
+# Linux / macOS:
+curl -fsSL https://raw.githubusercontent.com/Erzambayu/socdl/main/install.sh | bash
+```
+
+Atau download manual binary dari [Releases](https://github.com/Erzambayu/socdl/releases/latest).
+
+**Via pip:**
+
 ```bash
 pip install socdl
 # atau (lebih rapi):
 pipx install socdl
 ```
 
-Butuh Python 3.9+ dan ffmpeg (opsional tapi disaranin).
+Butuh ffmpeg (opsional tapi disaranin). Binary standalone ga butuh Python.
 
 ### Pake
 

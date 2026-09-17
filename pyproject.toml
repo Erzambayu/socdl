@@ -51,6 +51,9 @@ dev = [
     "ruff>=0.5",
     "mypy>=1.8",
 ]
+build = [
+    "pyinstaller>=6.6",
+]
 
 [project.urls]
 Homepage      = "https://github.com/Erzambayu/socdl"
