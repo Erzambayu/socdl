@@ -3,7 +3,7 @@ STRINGS = {
     "banner_subtitle": "Instagram | TikTok | YouTube | Twitter/X | Reddit | Facebook",
 
     "prompt_url": "Paste a link (or command)",
-    "prompt_hint": "Type '/help' for commands, '/quit' to exit.",
+    "prompt_hint": "Paste a link to download. Type /help for commands, /quit to exit.",
     "goodbye": "Bye! Stay safe out there.",
 
     "detecting": "Detecting platform...",
@@ -28,8 +28,28 @@ STRINGS = {
     "cmd_help_history": "Show recent downloads",
     "cmd_help_watch": "Start clipboard watcher (auto-download links you copy)",
     "cmd_help_lang": "Switch language: /lang en | /lang id",
-    "cmd_help_open": "Open downloads folder",
+    "cmd_help_open": "Open downloads folder (or /open <path>)",
     "cmd_help_paste": "Paste URL from clipboard",
+    "cmd_help_clear": "Clear the screen",
+    "cmd_help_clip": "Copy the last result / a URL to clipboard",
+    "cmd_help_stats": "Show download statistics",
+    "cmd_help_urls": "Tip: paste one or more URLs, separated by spaces",
+
+    "cmd_unknown": "Unknown command: /{cmd}. Type /help for the list.",
+    "cmd_opened": "Opened: {path}",
+    "cmd_open_fail": "Could not open: {path}",
+    "cmd_cleared": "Screen cleared.",
+    "cmd_clip_copied": "Copied to clipboard: {value}",
+    "cmd_clip_empty": "Nothing to copy yet.",
+    "cmd_clip_usage": "Usage: /clip <text or URL>",
+    "cmd_lang_invalid": "Usage: /lang en | /lang id",
+    "cmd_path_not_found": "Path does not exist: {path}",
+
+    "stats_title": "Download statistics",
+    "stats_total": "Total",
+    "stats_success": "Success",
+    "stats_failed": "Failed",
+    "stats_by_platform": "By platform",
 
     "cfg_created": "Created default config at: {path}",
     "cfg_loaded": "Config loaded from: {path}",

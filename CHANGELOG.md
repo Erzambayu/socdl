@@ -3,6 +3,19 @@
 All notable changes to **socdl** will be documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.2] — 2026-01-XX
+
+### Added
+- `/stats` command — summary of total / successful / failed downloads plus a per-platform breakdown.
+- `/clear` command to wipe the terminal inside the interactive shell.
+- `/clip [value]` to copy the last download result (or a literal string) to the clipboard.
+- Feedback messages for every interactive command, so it is always clear what happened.
+
+### Fixed
+- Interactive prompt no longer overlaps with panel/table output (pending output is flushed before reading input).
+- `/open` (and `/config`) now report failures instead of silently doing nothing, and no longer stack output on top of the prompt.
+- `/stats` no longer crashes due to an unsupported `title_style` argument passed to Rich's `Panel`.
+
 ## [0.1.1] — 2026-01-XX
 
 ### Changed

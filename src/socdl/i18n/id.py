@@ -3,7 +3,7 @@ STRINGS = {
     "banner_subtitle": "Instagram | TikTok | YouTube | Twitter/X | Reddit | Facebook",
 
     "prompt_url": "Paste link (atau command)",
-    "prompt_hint": "Ketik '/help' buat lihat command, '/quit' buat keluar.",
+    "prompt_hint": "Paste link buat download. Ketik /help buat command, /quit buat keluar.",
     "goodbye": "Bye! Jaga diri lo di internet ya.",
 
     "detecting": "Deteksi platform...",
@@ -28,8 +28,28 @@ STRINGS = {
     "cmd_help_history": "Liat download terakhir",
     "cmd_help_watch": "Nyalain clipboard watcher (auto-download link yg lo copy)",
     "cmd_help_lang": "Ganti bahasa: /lang en | /lang id",
-    "cmd_help_open": "Buka folder downloads",
+    "cmd_help_open": "Buka folder downloads (atau /open <path>)",
     "cmd_help_paste": "Paste URL dari clipboard",
+    "cmd_help_clear": "Bersihin layar",
+    "cmd_help_clip": "Copy hasil terakhir / URL ke clipboard",
+    "cmd_help_stats": "Liat statistik download",
+    "cmd_help_urls": "Tips: paste satu atau lebih URL, dipisah spasi",
+
+    "cmd_unknown": "Command gak dikenal: /{cmd}. Ketik /help buat lihat list.",
+    "cmd_opened": "Udah dibuka: {path}",
+    "cmd_open_fail": "Gak bisa buka: {path}",
+    "cmd_cleared": "Layar udah dibersihin.",
+    "cmd_clip_copied": "Ke-copy ke clipboard: {value}",
+    "cmd_clip_empty": "Belom ada yang bisa di-copy.",
+    "cmd_clip_usage": "Cara pake: /clip <teks atau URL>",
+    "cmd_lang_invalid": "Cara pake: /lang en | /lang id",
+    "cmd_path_not_found": "Path gak ada: {path}",
+
+    "stats_title": "Statistik download",
+    "stats_total": "Total",
+    "stats_success": "Sukses",
+    "stats_failed": "Gagal",
+    "stats_by_platform": "Per platform",
 
     "cfg_created": "Config default dibuat di: {path}",
     "cfg_loaded": "Config di-load dari: {path}",

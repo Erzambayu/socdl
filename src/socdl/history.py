@@ -96,4 +96,28 @@ def clear() -> int:
         return cur.rowcount
 
 
-__all__ = ["HistoryEntry", "record", "recent", "clear", "db_path"]
+class Stats(NamedTuple):
+    total: int
+    success: int
+    failed: int
+    by_platform: list[tuple[str, int]]
+
+
+def stats() -> Stats:
+    """Aggregate download counts overall and per platform."""
+    init()
+    with _conn() as c:
+        total = c.execute("SELECT COUNT(*) FROM downloads").fetchone()[0]
+        success = c.execute(
+            "SELECT COUNT(*) FROM downloads WHERE status='success'"
+        ).fetchone()[0]
+        failed = total - success
+        rows = c.execute(
+            """SELECT platform, COUNT(*) AS n FROM downloads
+               GROUP BY platform ORDER BY n DESC"""
+        ).fetchall()
+    return Stats(total=total, success=success, failed=failed,
+                 by_platform=[(r[0], r[1]) for r in rows])
+
+
+__all__ = ["HistoryEntry", "Stats", "record", "recent", "clear", "stats", "db_path"]

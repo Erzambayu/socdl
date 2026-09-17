@@ -55,14 +55,52 @@ def print_help_table() -> None:
     tbl.add_column("Command", style="accent", no_wrap=True)
     tbl.add_column("Description", style="value")
     tbl.add_row("/help",    t("cmd_help_help"))
-    tbl.add_row("/quit  /exit  q", t("cmd_help_quit"))
+    tbl.add_row("/quit",    t("cmd_help_quit"))
     tbl.add_row("/config",  t("cmd_help_config"))
     tbl.add_row("/history", t("cmd_help_history"))
+    tbl.add_row("/stats",   t("cmd_help_stats"))
     tbl.add_row("/watch",   t("cmd_help_watch"))
     tbl.add_row("/paste",   t("cmd_help_paste"))
+    tbl.add_row("/clip",    t("cmd_help_clip"))
     tbl.add_row("/open",    t("cmd_help_open"))
-    tbl.add_row("/lang en | id", t("cmd_help_lang"))
+    tbl.add_row("/clear",   t("cmd_help_clear"))
+    tbl.add_row("/lang",    t("cmd_help_lang"))
     console.print(tbl)
+    console.print(f"[muted]{t('cmd_help_urls')}[/muted]")
+
+
+def print_stats(st: "object") -> None:
+    """Render a history.Stats object as a colored summary."""
+    from rich.columns import Columns
+    from rich.panel import Panel
+
+    def box(label: str, value: int, style: str) -> Panel:
+        body = Text.assemble(
+            (f"{value}\n", f"bold {style}"),
+            (label, "muted"),
+        )
+        return Panel(Align.center(body), border_style=style, padding=(0, 2))
+
+    grid = Columns(
+        [
+            box(t("stats_total"), st.total, "brand"),
+            box(t("stats_success"), st.success, "ok"),
+            box(t("stats_failed"), st.failed, "err"),
+        ],
+        equal=True,
+        expand=True,
+    )
+    console.print(
+        Panel(grid, title=f"[brand]{t('stats_title')}[/brand]", border_style="muted")
+    )
+
+    if st.by_platform:
+        tbl = Table(title=t("stats_by_platform"), title_style="accent", border_style="muted")
+        tbl.add_column(t("hist_col_platform"), style="accent")
+        tbl.add_column("Count", style="value", justify="right")
+        for plat, n in st.by_platform:
+            tbl.add_row(plat or "unknown", str(n))
+        console.print(tbl)
 
 
 def print_history(rows: Iterable) -> None:
@@ -87,7 +125,17 @@ def print_history(rows: Iterable) -> None:
 
 
 def prompt_url() -> str:
-    return console.input("[prompt]socdl >[/prompt] ").strip()
+    """Read a line from the user, styled. Flushes any pending output first."""
+    console.file.flush()
+    try:
+        return console.input("[prompt]socdl >[/prompt] ").strip()
+    except EOFError:
+        return "/quit"
+
+
+def blank() -> None:
+    """Print a blank line (used after side-effects like opening a folder)."""
+    console.print()
 
 
 def notice(msg: str, style: str = "accent") -> None:
@@ -102,5 +150,6 @@ def muted(msg: str) -> None: notice(msg, "muted")
 
 __all__ = [
     "console", "print_banner", "kv", "hr", "print_help_table",
-    "print_history", "prompt_url", "notice", "ok", "warn", "err", "muted",
+    "print_history", "print_stats", "prompt_url", "blank",
+    "notice", "ok", "warn", "err", "muted",
 ]

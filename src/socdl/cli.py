@@ -16,6 +16,7 @@ from . import config as cfgmod
 from .i18n import set_lang, t
 from .platforms import detect_platform
 from .router import download as route_download
+from .ui import blank as ui_blank
 from .ui import (
     console,
     err,
@@ -27,6 +28,7 @@ from .ui import (
     print_banner,
     print_help_table,
     print_history,
+    print_stats,
     prompt_url,
     warn,
 )
@@ -132,17 +134,20 @@ def _handle_url(url: str, cfg: cfgmod.Config) -> bool:
 # ---------------------------------------------------------------------------
 # Interactive mode
 # ---------------------------------------------------------------------------
+QUIT_WORDS = {"quit", "exit", "q", "bye", ":q", ":quit"}
+PATH_COMMANDS = {"open", "config"}
+
+
 def _interactive(cfg: cfgmod.Config) -> None:
-    print_banner()
-    kv(t("folder"), str(cfg.resolved_output_dir()))
-    muted(t("prompt_hint"))
-    console.print()
+    _print_intro(cfg)
+    state = _InteractionState()
 
     while True:
         try:
             raw = prompt_url()
-        except (EOFError, KeyboardInterrupt):
+        except KeyboardInterrupt:
             console.print()
+            warn(t("goodbye"))
             break
 
         if not raw:
@@ -152,39 +157,93 @@ def _interactive(cfg: cfgmod.Config) -> None:
             parts = raw[1:].split(maxsplit=1)
             cmd = parts[0].lower() if parts else ""
             arg = parts[1] if len(parts) > 1 else ""
-            if not _handle_command(cmd, arg, cfg):
+            keep_going = _handle_command(cmd, arg, cfg, state)
+            if not keep_going:
                 break
+            # Commands that trigger OS side-effects (open/config) can leave the
+            # terminal cursor in a weird place; reset cleanly.
+            if cmd in PATH_COMMANDS:
+                ui_blank()
             continue
 
-        if raw.lower() in ("q", "quit", "exit", ":q"):
+        if raw.lower() in QUIT_WORDS:
             break
 
         urls = _extract_urls(raw)
         if not urls:
             warn(t("no_url"))
             continue
+
         for u in urls:
-            _handle_url(u, cfg)
+            ok_dl = _handle_url(u, cfg)
+            state.remember(u, ok_dl)
+        console.print()
 
     ok(t("goodbye"))
 
 
-def _handle_command(cmd: str, arg: str, cfg: cfgmod.Config) -> bool:
-    if cmd in ("quit", "exit", "q"):
+class _InteractionState:
+    """Tiny bit of session memory for interactive niceties (e.g. /clip)."""
+
+    def __init__(self) -> None:
+        self.last_url: Optional[str] = None
+        self.last_ok: Optional[bool] = None
+
+    def remember(self, url: str, ok: bool) -> None:
+        self.last_url = url
+        self.last_ok = ok
+
+
+def _print_intro(cfg: cfgmod.Config) -> None:
+    print_banner()
+    kv(t("folder"), str(cfg.resolved_output_dir()))
+    notice(t("prompt_hint"), "muted")
+    console.print()
+
+
+def _handle_command(cmd: str, arg: str, cfg: cfgmod.Config, state: "_InteractionState") -> bool:
+    """Return False to exit the interactive loop."""
+    # --- exit ---
+    if cmd in QUIT_WORDS:
         return False
-    if cmd == "help":
+
+    # --- help ---
+    if cmd in ("help", "h", "?"):
         print_help_table()
         return True
+
+    # --- config ---
     if cmd == "config":
-        _open_path(cfgmod.config_path())
-        notice(str(cfgmod.config_path()))
+        path = cfgmod.config_path()
+        if _open_path(path):
+            ok(t("cmd_opened", path=str(path)))
+        else:
+            warn(t("cmd_open_fail", path=str(path)))
         return True
+
+    # --- history ---
     if cmd == "history":
         print_history(history.recent(limit=20))
         return True
-    if cmd == "open":
-        _open_path(cfg.resolved_output_dir())
+
+    # --- stats ---
+    if cmd == "stats":
+        print_stats(history.stats())
         return True
+
+    # --- open [path] ---
+    if cmd == "open":
+        target = Path(arg).expanduser() if arg else cfg.resolved_output_dir()
+        if not target.exists():
+            warn(t("cmd_path_not_found", path=str(target)))
+            return True
+        if _open_path(target):
+            ok(t("cmd_opened", path=str(target)))
+        else:
+            warn(t("cmd_open_fail", path=str(target)))
+        return True
+
+    # --- paste ---
     if cmd == "paste":
         try:
             import pyperclip
@@ -196,11 +255,37 @@ def _handle_command(cmd: str, arg: str, cfg: cfgmod.Config) -> bool:
             warn(t("watch_no_clip"))
         else:
             for u in urls:
-                _handle_url(u, cfg)
+                ok_dl = _handle_url(u, cfg)
+                state.remember(u, ok_dl)
+            console.print()
         return True
+
+    # --- clip [value] ---
+    if cmd == "clip":
+        value = arg.strip() or state.last_url or ""
+        if not value:
+            warn(t("cmd_clip_empty"))
+            return True
+        try:
+            import pyperclip
+            pyperclip.copy(value)
+            ok(t("cmd_clip_copied", value=value))
+        except Exception:
+            warn(t("cmd_clip_usage"))
+        return True
+
+    # --- watch ---
     if cmd == "watch":
         _run_watcher(cfg)
         return True
+
+    # --- clear ---
+    if cmd == "clear":
+        console.clear()
+        _print_intro(cfg)
+        return True
+
+    # --- lang ---
     if cmd == "lang":
         lang = (arg or "").strip().lower()
         if lang in ("en", "id"):
@@ -209,26 +294,33 @@ def _handle_command(cmd: str, arg: str, cfg: cfgmod.Config) -> bool:
             cfgmod.save(cfg)
             ok(t("cfg_saved"))
         else:
-            warn("Usage: /lang en | /lang id")
+            warn(t("cmd_lang_invalid"))
         return True
-    warn(f"Unknown command: /{cmd}")
+
+    warn(t("cmd_unknown", cmd=cmd))
     return True
 
 
-def _open_path(path: Path) -> None:
-    if path.suffix:
-        path.parent.mkdir(parents=True, exist_ok=True)
-    else:
-        path.mkdir(parents=True, exist_ok=True)
+def _open_path(path: Path) -> bool:
+    """Open a file/folder with the OS default handler. Returns True on success."""
+    try:
+        if path.suffix:
+            path.parent.mkdir(parents=True, exist_ok=True)
+        else:
+            path.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return False
+
     try:
         if sys.platform == "win32":
-            os.startfile(str(path))  # noqa
+            os.startfile(str(path))  # noqa: S606
         elif sys.platform == "darwin":
             subprocess.run(["open", str(path)], check=False)
         else:
             subprocess.run(["xdg-open", str(path)], check=False)
+        return True
     except Exception:
-        pass
+        return False
 
 
 def _run_watcher(cfg: cfgmod.Config) -> None:

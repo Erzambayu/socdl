@@ -149,9 +149,12 @@ socdl watch
 /help           Show help
 /config         Open config file
 /history        Show recent downloads
+/stats          Show download statistics
 /watch          Start clipboard watcher
 /paste          Download URL from clipboard
-/open           Open downloads folder
+/clip [value]   Copy last result (or a value) to clipboard
+/open [path]    Open downloads folder (or a path)
+/clear          Clear the screen
 /lang en|id     Switch UI language
 /quit           Exit
 ```
