@@ -29,6 +29,11 @@ def engine_chain(det: Detected) -> list[str]:
         if det.kind == "photo":
             return ["gallery-dl", "yt-dlp"]
         return ["yt-dlp", "gallery-dl"]
+    if det.platform == "facebook":
+        # yt-dlp is the only engine with real Facebook support; gallery-dl has
+        # no Facebook extractor, so don't waste an attempt (and a misleading
+        # final error) on it.
+        return ["yt-dlp"]
     if det.platform == "twitter":
         return ["gallery-dl", "yt-dlp"]
     if det.platform == "reddit":
@@ -43,8 +48,14 @@ ENGINE_MAP = {
 }
 
 
-def download(url: str, det: Detected, cfg: Config, progress_cb=None) -> EngineResult:
-    """Try engines in order until one succeeds or all fail."""
+def download(url: str, det: Detected, cfg: Config, progress_cb=None,
+             on_engine=None) -> EngineResult:
+    """Try engines in order until one succeeds or all fail.
+
+    ``on_engine(name)`` is called when an engine attempt begins (engine
+    switch). ``progress_cb(ProgressInfo)`` receives byte-level progress from
+    engines that support it (currently yt-dlp).
+    """
     out_dir = _resolve_out_dir(det, cfg)
     chain: Iterable[str] = engine_chain(det)
 
@@ -53,9 +64,9 @@ def download(url: str, det: Detected, cfg: Config, progress_cb=None) -> EngineRe
         engine = ENGINE_MAP[name]()
         if not engine.is_available():
             continue
-        if progress_cb:
-            progress_cb(name)
-        res = engine.download(url, out_dir, det, cfg)
+        if on_engine:
+            on_engine(name)
+        res = engine.download(url, out_dir, det, cfg, progress=progress_cb)
         if res.ok:
             return res
         last = res

@@ -5,11 +5,11 @@ import os
 import re
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
 import click
-from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from . import __version__, history, updater
 from . import config as cfgmod
@@ -20,14 +20,19 @@ from .ui import blank as ui_blank
 from .ui import (
     console,
     err,
+    fmt_bytes,
+    fmt_eta,
+    fmt_speed,
     hr,
     kv,
+    make_progress,
     muted,
     notice,
     ok,
     print_banner,
     print_help_table,
     print_history,
+    print_queue,
     print_stats,
     prompt_url,
     warn,
@@ -93,22 +98,38 @@ def _handle_url(url: str, cfg: cfgmod.Config) -> bool:
     if det.platform == "unknown":
         warn(t("unknown_platform"))
 
-    engine_used = ["-"]
-    with Progress(
-        SpinnerColumn(style="brand"),
-        TextColumn("[accent]{task.description}"),
-        BarColumn(bar_width=None),
-        TimeElapsedColumn(),
-        console=console,
-        transient=True,
-    ) as progress:
-        task = progress.add_task(f"{t('downloading')}...", start=True, total=None)
+    with make_progress() as progress:
+        task = progress.add_task(f"{t('downloading')}...", start=True,
+                                 total=None, detail=t("prog_unknown"))
 
         def on_engine(name: str) -> None:
-            engine_used[0] = name
-            progress.update(task, description=f"{t('downloading')} · [muted]{name}[/muted]")
+            progress.update(task, description=f"{t('downloading')} · [muted]{name}[/muted]",
+                            detail=t("prog_unknown"))
 
-        result = route_download(url, det, cfg, progress_cb=on_engine)
+        def on_progress(info) -> None:
+            if info.status == "finished":
+                progress.update(task, completed=100, total=100,
+                                detail=t("prog_processing"))
+                return
+
+            size = t("prog_size",
+                     downloaded=fmt_bytes(info.downloaded),
+                     total=fmt_bytes(info.total) if info.total else "?")
+            bits = [size]
+            if info.speed:
+                bits.append(fmt_speed(info.speed))
+            if info.eta is not None:
+                bits.append(t("prog_eta", eta=fmt_eta(info.eta)))
+            detail = "  ".join(bits)
+
+            if info.total:
+                progress.update(task, total=info.total, completed=info.downloaded,
+                                detail=detail)
+            else:
+                progress.update(task, total=None, detail=detail)
+
+        result = route_download(url, det, cfg,
+                                progress_cb=on_progress, on_engine=on_engine)
 
     if result.ok:
         ok(t("success", path=str(result.output_dir)))
@@ -117,6 +138,8 @@ def _handle_url(url: str, cfg: cfgmod.Config) -> bool:
             (f"  {result.message}" if result.message else ""))
         if det.platform == "instagram" and not cfg.instagram_login:
             muted(t("ig_login_needed"))
+        elif det.platform == "facebook" and not cfg.cookies_from_browser:
+            muted(t("fb_login_needed"))
 
     if cfg.log_history:
         history.record(
@@ -136,6 +159,40 @@ def _handle_url(url: str, cfg: cfgmod.Config) -> bool:
 # ---------------------------------------------------------------------------
 QUIT_WORDS = {"quit", "exit", "q", "bye", ":q", ":quit"}
 PATH_COMMANDS = {"open", "config"}
+
+
+@dataclass
+class QueueItem:
+    """A URL waiting to be downloaded."""
+
+    url: str
+    platform: str = "?"
+
+
+def _drain_queue(items: list["QueueItem"], cfg: cfgmod.Config,
+                 state: "_InteractionState") -> None:
+    """Download every queued item, reporting a final summary."""
+    total = len(items)
+    if not total:
+        warn(t("queue_empty"))
+        return
+
+    notice(t("queue_start", n=total), "accent")
+    ok_count = 0
+    fail_count = 0
+    for i, item in enumerate(items, start=1):
+        muted(t("queue_item", i=i, n=total, url=item.url))
+        ok_dl = _handle_url(item.url, cfg)
+        state.remember(item.url, ok_dl)
+        if ok_dl:
+            ok_count += 1
+        else:
+            fail_count += 1
+        console.print()
+
+    style = "ok" if fail_count == 0 else "warn"
+    notice(t("queue_done", ok=ok_count, fail=fail_count), style)
+    items.clear()
 
 
 def _interactive(cfg: cfgmod.Config) -> None:
@@ -174,9 +231,20 @@ def _interactive(cfg: cfgmod.Config) -> None:
             warn(t("no_url"))
             continue
 
+        # A single link downloads right away. Multiple links are queued so
+        # each one gets its own progress bar and the user can review/run the
+        # batch with /queue run.
+        if len(urls) == 1:
+            ok_dl = _handle_url(urls[0], cfg)
+            state.remember(urls[0], ok_dl)
+            console.print()
+            continue
+
         for u in urls:
-            ok_dl = _handle_url(u, cfg)
-            state.remember(u, ok_dl)
+            state.queue.append(QueueItem(url=u, platform=detect_platform(u).platform))
+        ok(t("queue_added_many", n=len(urls)))
+        muted(t("queue_queued_n", n=len(state.queue)))
+        muted(t("queue_hint_auto"))
         console.print()
 
     ok(t("goodbye"))
@@ -188,6 +256,7 @@ class _InteractionState:
     def __init__(self) -> None:
         self.last_url: Optional[str] = None
         self.last_ok: Optional[bool] = None
+        self.queue: list[QueueItem] = []
 
     def remember(self, url: str, ok: bool) -> None:
         self.last_url = url
@@ -285,6 +354,11 @@ def _handle_command(cmd: str, arg: str, cfg: cfgmod.Config, state: "_Interaction
         _print_intro(cfg)
         return True
 
+    # --- queue ---
+    if cmd == "queue":
+        _handle_queue(arg, cfg, state)
+        return True
+
     # --- lang ---
     if cmd == "lang":
         lang = (arg or "").strip().lower()
@@ -299,6 +373,50 @@ def _handle_command(cmd: str, arg: str, cfg: cfgmod.Config, state: "_Interaction
 
     warn(t("cmd_unknown", cmd=cmd))
     return True
+
+
+def _handle_queue(arg: str, cfg: cfgmod.Config, state: "_InteractionState") -> None:
+    """Handle `/queue ...` subcommands: add | run | list | clear."""
+    parts = arg.split(maxsplit=1)
+    sub = parts[0].lower() if parts else ""
+    rest = parts[1] if len(parts) > 1 else ""
+
+    # /queue (no sub) or /queue list -> show queue
+    if sub in ("", "list", "ls", "show"):
+        print_queue(state.queue)
+        if state.queue:
+            muted(t("queue_queued_n", n=len(state.queue)))
+        return
+
+    # /queue add <url...>  (also accepts bare URLs: /queue <url>)
+    if sub in ("add", "a", "push", "+") or _looks_like_url(sub) or _extract_urls(sub):
+        text = f"{sub} {rest}" if sub not in ("add", "a", "push", "+") else rest
+        urls = _extract_urls(text)
+        if not urls:
+            warn(t("queue_no_url"))
+            return
+        for u in urls:
+            state.queue.append(QueueItem(url=u, platform=detect_platform(u).platform))
+        if len(urls) == 1:
+            ok(t("queue_added", url=urls[0]))
+        else:
+            ok(t("queue_added_many", n=len(urls)))
+        muted(t("queue_queued_n", n=len(state.queue)))
+        return
+
+    # /queue run -> download everything now
+    if sub in ("run", "start", "go", "download"):
+        _drain_queue(state.queue, cfg, state)
+        return
+
+    # /queue clear -> empty the queue
+    if sub in ("clear", "reset", "flush"):
+        n = len(state.queue)
+        state.queue.clear()
+        ok(t("queue_cleared", n=n))
+        return
+
+    warn(t("queue_usage"))
 
 
 def _open_path(path: Path) -> bool:

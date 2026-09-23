@@ -21,6 +21,29 @@ STRINGS = {
     "no_url": "Gak nemu URL valid. Coba lagi ya.",
     "unknown_platform": "Platform gak dikenal, coba pake yt-dlp sebagai fallback...",
 
+    "prog_size": "{downloaded}/{total}",
+    "prog_speed": "{speed}/s",
+    "prog_eta": "ETA {eta}",
+    "prog_processing": "Lagi diproses...",
+    "prog_unknown": "Mulai...",
+
+    "queue_title": "Antrian download",
+    "queue_empty": "Antrian kosong.",
+    "queue_added": "Masuk antrian: {url}",
+    "queue_added_many": "{n} link masuk antrian.",
+    "queue_queued_n": "{n} item di antrian. Jalanin /queue run buat mulai.",
+    "queue_hint_auto": "Kedeteksi banyak link - udah masuk antrian. Jalanin /queue run buat mulai.",
+    "queue_start": "Proses {n} item dari antrian...",
+    "queue_item": "[{i}/{n}] {url}",
+    "queue_done": "Antrian kelar: {ok} sukses, {fail} gagal.",
+    "queue_cleared": "Antrian dibersihin ({n} item dihapus).",
+    "queue_col_num": "#",
+    "queue_col_platform": "Platform",
+    "queue_col_url": "URL",
+    "queue_usage": "Cara pake: /queue add <url> | /queue run | /queue list | /queue clear",
+    "queue_no_url": "Gak ada URL valid buat dimasukin.",
+    "queue_running": "Lagi ada download yang jalan.",
+
     "cmd_help_title": "Command interactive",
     "cmd_help_help": "Tampilin bantuan ini",
     "cmd_help_quit": "Keluar dari socdl",
@@ -33,6 +56,7 @@ STRINGS = {
     "cmd_help_clear": "Bersihin layar",
     "cmd_help_clip": "Copy hasil terakhir / URL ke clipboard",
     "cmd_help_stats": "Liat statistik download",
+    "cmd_help_queue": "Queue: /queue add <url>, /queue run, /queue list, /queue clear",
     "cmd_help_urls": "Tips: paste satu atau lebih URL, dipisah spasi",
 
     "cmd_unknown": "Command gak dikenal: /{cmd}. Ketik /help buat lihat list.",
@@ -80,6 +104,7 @@ STRINGS = {
     "dep_install_fail": "Gagal install {pkg}. Install manual dong.",
 
     "ig_login_needed": "Konten Instagram butuh login. Set username IG di `socdl config` atau edit config.toml.",
+    "fb_login_needed": "Facebook sering butuh login buat video. Set `cookies_from_browser` (mis. chrome) lewat `socdl config --set cookies_from_browser=chrome`.",
 
     "err_python_too_old": "Butuh Python 3.9+. Sekarang: {version}",
     "err_unexpected": "Error gak terduga: {err}",

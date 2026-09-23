@@ -21,6 +21,29 @@ STRINGS = {
     "no_url": "No valid URL found. Try again.",
     "unknown_platform": "Unknown platform, trying yt-dlp as fallback...",
 
+    "prog_size": "{downloaded}/{total}",
+    "prog_speed": "{speed}/s",
+    "prog_eta": "ETA {eta}",
+    "prog_processing": "Processing...",
+    "prog_unknown": "Starting...",
+
+    "queue_title": "Download queue",
+    "queue_empty": "Queue is empty.",
+    "queue_added": "Added to queue: {url}",
+    "queue_added_many": "Added {n} link(s) to queue.",
+    "queue_queued_n": "{n} item(s) queued. Run /queue run to start.",
+    "queue_hint_auto": "Multiple links detected - queued them. Run /queue run to start.",
+    "queue_start": "Processing {n} item(s) from the queue...",
+    "queue_item": "[{i}/{n}] {url}",
+    "queue_done": "Queue finished: {ok} ok, {fail} failed.",
+    "queue_cleared": "Queue cleared ({n} item(s) removed).",
+    "queue_col_num": "#",
+    "queue_col_platform": "Platform",
+    "queue_col_url": "URL",
+    "queue_usage": "Usage: /queue add <url> | /queue run | /queue list | /queue clear",
+    "queue_no_url": "No valid URL to add.",
+    "queue_running": "A download is already running.",
+
     "cmd_help_title": "Interactive commands",
     "cmd_help_help": "Show this help",
     "cmd_help_quit": "Exit socdl",
@@ -33,6 +56,7 @@ STRINGS = {
     "cmd_help_clear": "Clear the screen",
     "cmd_help_clip": "Copy the last result / a URL to clipboard",
     "cmd_help_stats": "Show download statistics",
+    "cmd_help_queue": "Queue: /queue add <url>, /queue run, /queue list, /queue clear",
     "cmd_help_urls": "Tip: paste one or more URLs, separated by spaces",
 
     "cmd_unknown": "Unknown command: /{cmd}. Type /help for the list.",
@@ -80,6 +104,7 @@ STRINGS = {
     "dep_install_fail": "Failed to install {pkg}. Please install manually.",
 
     "ig_login_needed": "Instagram content requires login. Configure IG username in `socdl config` or edit config.toml.",
+    "fb_login_needed": "Facebook often requires login for videos. Set `cookies_from_browser` (e.g. chrome) via `socdl config --set cookies_from_browser=chrome`.",
 
     "err_python_too_old": "Python 3.9+ is required. Current: {version}",
     "err_unexpected": "Unexpected error: {err}",

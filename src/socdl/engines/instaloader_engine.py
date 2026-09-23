@@ -12,7 +12,10 @@ class InstaloaderEngine(BaseEngine):
     name = "instaloader"
     module = "instaloader"
 
-    def download(self, url: str, out_dir: Path, det: Detected, cfg: Config) -> EngineResult:
+    def download(self, url: str, out_dir: Path, det: Detected, cfg: Config,
+                 progress=None) -> EngineResult:
+        # instaloader exposes no stable byte-level progress hook; ``progress``
+        # is accepted for a uniform engine interface and ignored here.
         if self.should_run_in_process():
             return self._download_in_process(url, out_dir, det, cfg)
         return self._download_subprocess(url, out_dir, det, cfg)

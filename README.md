@@ -150,6 +150,10 @@ socdl watch
 /config         Open config file
 /history        Show recent downloads
 /stats          Show download statistics
+/queue add URL  Queue one or more links
+/queue run      Download everything in the queue
+/queue list     Show the queue
+/queue clear    Empty the queue
 /watch          Start clipboard watcher
 /paste          Download URL from clipboard
 /clip [value]   Copy last result (or a value) to clipboard
@@ -158,6 +162,10 @@ socdl watch
 /lang en|id     Switch UI language
 /quit           Exit
 ```
+
+> **Tip:** paste several links at once and they are queued automatically — run
+> `/queue run` when you are ready. Every download shows a live progress bar with
+> speed and ETA.
 
 ## ⚙️ Configuration
 

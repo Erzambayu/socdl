@@ -3,6 +3,36 @@
 All notable changes to **socdl** will be documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.4] — 2026-01-XX
+
+### Added
+- **Real download progress bar**: a live bar with percentage, transferred/total
+  size, speed and ETA. Works both for the subprocess engine (parsed from a
+  machine-readable `--progress-template` line) and the in-process yt-dlp API
+  (via `progress_hooks`).
+- **Download queue**: multiple pasted links are now queued instead of firing all
+  at once. Manage it with `/queue add <url>`, `/queue run`, `/queue list` and
+  `/queue clear`. Single links still download immediately.
+
+### Fixed
+- **Facebook support**: far more link forms are now recognised (`fb.watch`,
+  `/<user>/videos/<id>`, `/share/r|v/<code>`, group posts, `photo?fbid=`,
+  `permalink.php`, `m.facebook.com`, `web.facebook.com`, …) instead of falling
+  through to "unknown". A short hint is shown when Facebook asks for a login.
+- **Portrait / reel videos failed at non-"best" quality**. The quality filters
+  used `height<=N`, but for vertical videos (Facebook reels, YouTube Shorts,
+  TikTok) the *height* is the long side, so nothing matched and the download
+  aborted with "Requested format is not available". Filters now cap both
+  dimensions and always fall back to the best available format.
+- Facebook now routes to `yt-dlp` only (gallery-dl has no Facebook extractor),
+  avoiding a pointless fallback attempt and a misleading final error.
+
+### Changed
+- Engines accept an optional progress callback; the router now distinguishes the
+  engine-switch callback (`on_engine`) from byte-level progress (`progress_cb`).
+- In-process yt-dlp output is silenced while our own progress bar is active, so
+  the two no longer interleave.
+
 ## [0.1.3] — 2026-01-XX
 
 ### Changed

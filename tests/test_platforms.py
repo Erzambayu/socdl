@@ -29,12 +29,43 @@ from socdl.platforms import detect_platform
 
     ("https://www.reddit.com/r/aww/comments/abc123/cute_cat/", "reddit", "post"),
 
+    ("https://www.facebook.com/reel/1044635761456156",        "facebook", "reel"),
+    ("https://www.facebook.com/watch/?v=1044635761456156",    "facebook", "video"),
+    ("https://www.facebook.com/watch?v=1044635761456156",     "facebook", "video"),
+    ("https://www.facebook.com/user/videos/1234567890/",      "facebook", "video"),
+    ("https://www.facebook.com/user/video/1234567890",        "facebook", "video"),
+    ("https://www.facebook.com/share/r/ABCdef123/",           "facebook", "video"),
+    ("https://www.facebook.com/user/posts/123456789",         "facebook", "post"),
+    ("https://www.facebook.com/groups/12345/posts/67890",     "facebook", "post"),
+    ("https://www.facebook.com/photo?fbid=123&set=a.456",     "facebook", "photo"),
+    ("https://www.facebook.com/photo.php?fbid=123456",        "facebook", "photo"),
+    ("https://www.facebook.com/permalink.php?story_fbid=99&id=1", "facebook", "post"),
+    ("https://fb.watch/abcdef123/",                           "facebook", "video"),
+    ("https://web.facebook.com/reel/1044635761456156",        "facebook", "reel"),
+
     ("https://example.com/whatever", "unknown", "media"),
 ])
 def test_detection(url, platform, kind):
     det = detect_platform(url)
     assert det.platform == platform, det
     assert det.kind == kind, det
+
+
+@pytest.mark.parametrize("url, target", [
+    ("https://www.facebook.com/reel/1044635761456156", "1044635761456156"),
+    ("https://www.facebook.com/user/videos/1234567890/", "1234567890"),
+    ("https://www.facebook.com/photo?fbid=123&set=a.456", "123"),
+    ("https://fb.watch/abcdef123/", "abcdef123"),
+])
+def test_facebook_target_extracted(url, target):
+    assert detect_platform(url).target == target
+
+
+def test_facebook_engine_chain_is_ytdlp_only():
+    from socdl.router import engine_chain
+
+    det = detect_platform("https://www.facebook.com/reel/1044635761456156")
+    assert engine_chain(det) == ["yt-dlp"]
 
 
 def test_reserved_ig_paths_are_not_profiles():

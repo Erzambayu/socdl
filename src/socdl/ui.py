@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from rich.align import Align
 from rich.console import Console
 from rich.panel import Panel
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 from rich.text import Text
 from rich.theme import Theme
@@ -59,6 +60,7 @@ def print_help_table() -> None:
     tbl.add_row("/config",  t("cmd_help_config"))
     tbl.add_row("/history", t("cmd_help_history"))
     tbl.add_row("/stats",   t("cmd_help_stats"))
+    tbl.add_row("/queue",   t("cmd_help_queue"))
     tbl.add_row("/watch",   t("cmd_help_watch"))
     tbl.add_row("/paste",   t("cmd_help_paste"))
     tbl.add_row("/clip",    t("cmd_help_clip"))
@@ -124,6 +126,74 @@ def print_history(rows: Iterable) -> None:
     console.print(tbl)
 
 
+def fmt_bytes(n) -> str:
+    """Human-readable byte size, e.g. '12.4 MB'."""
+    if not n:
+        return "0 B"
+    n = float(n)
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if n < 1024 or unit == "TB":
+            return f"{n:.0f} {unit}" if unit == "B" else f"{n:.1f} {unit}"
+        n /= 1024
+    return f"{n:.1f} TB"
+
+
+def fmt_speed(bps) -> str:
+    """Human-readable transfer speed, e.g. '3.2 MB/s'."""
+    if not bps:
+        return "?"
+    return f"{fmt_bytes(bps)}/s"
+
+
+def fmt_eta(seconds) -> str:
+    """Human-readable ETA, e.g. '1m 05s'."""
+    if seconds is None:
+        return "?"
+    try:
+        seconds = int(seconds)
+    except (TypeError, ValueError):
+        return "?"
+    if seconds < 0:
+        return "?"
+    if seconds < 60:
+        return f"{seconds}s"
+    m, s = divmod(seconds, 60)
+    if m < 60:
+        return f"{m}m {s:02d}s"
+    h, m = divmod(m, 60)
+    return f"{h}h {m:02d}m"
+
+
+def make_progress() -> "Progress":
+    """Build the shared Rich Progress bar used for downloads."""
+    return Progress(
+        SpinnerColumn(style="brand"),
+        TextColumn("[accent]{task.description}"),
+        BarColumn(bar_width=None),
+        TextColumn("[muted]{task.fields[detail]}"),
+        TimeElapsedColumn(),
+        console=console,
+        transient=True,
+    )
+
+
+def print_queue(items: Iterable) -> None:
+    """Render the queued URLs as a table."""
+    items = list(items)
+    if not items:
+        console.print(f"[muted]{t('queue_empty')}[/muted]")
+        return
+    tbl = Table(title=t("queue_title"), title_style="brand", border_style="muted")
+    tbl.add_column(t("queue_col_num"), style="muted", justify="right", no_wrap=True)
+    tbl.add_column(t("queue_col_platform"), style="accent", no_wrap=True)
+    tbl.add_column(t("queue_col_url"), style="value", overflow="fold", max_width=60)
+    for i, item in enumerate(items, start=1):
+        plat = getattr(item, "platform", "") or "?"
+        url = getattr(item, "url", str(item))
+        tbl.add_row(str(i), plat, url)
+    console.print(tbl)
+
+
 def prompt_url() -> str:
     """Read a line from the user, styled. Flushes any pending output first."""
     console.file.flush()
@@ -150,6 +220,7 @@ def muted(msg: str) -> None: notice(msg, "muted")
 
 __all__ = [
     "console", "print_banner", "kv", "hr", "print_help_table",
-    "print_history", "print_stats", "prompt_url", "blank",
+    "print_history", "print_stats", "print_queue", "prompt_url", "blank",
     "notice", "ok", "warn", "err", "muted",
+    "fmt_bytes", "fmt_speed", "fmt_eta", "make_progress",
 ]

@@ -37,6 +37,31 @@ class EngineResult:
     message: str = ""
 
 
+@dataclass
+class ProgressInfo:
+    """Normalized progress snapshot reported by an engine.
+
+    ``total`` may be None when the size is unknown (indeterminate). ``status``
+    mirrors yt-dlp's hook status: 'downloading' | 'finished' | 'error'.
+    """
+
+    status: str = "downloading"
+    downloaded: float = 0.0
+    total: Optional[float] = None
+    speed: Optional[float] = None    # bytes/sec
+    eta: Optional[float] = None      # seconds
+    filename: str = ""
+
+    @property
+    def percent(self) -> Optional[float]:
+        if not self.total:
+            return None
+        try:
+            return max(0.0, min(100.0, self.downloaded / self.total * 100.0))
+        except ZeroDivisionError:
+            return None
+
+
 MODULE_ALIAS = {
     "yt-dlp": "yt_dlp",
     "gallery-dl": "gallery_dl",
@@ -77,15 +102,41 @@ def find_command(name: str) -> Optional[list[str]]:
     return None
 
 
-def run_subprocess(cmd: Sequence[str], *, quiet: bool = False) -> int:
-    """Run subprocess, streaming stdout/stderr to terminal. Returns exit code."""
+def run_subprocess(cmd: Sequence[str], *, quiet: bool = False,
+                   on_line=None) -> int:
+    """Run subprocess, streaming stdout/stderr to terminal. Returns exit code.
+
+    When ``on_line`` is given, stdout is captured and each line is passed to
+    the callback (used to parse download progress) instead of inheriting the
+    terminal; stderr is still inherited so warnings stay visible.
+    """
     try:
-        proc = subprocess.run(
+        if on_line is None:
+            proc = subprocess.run(
+                list(cmd),
+                check=False,
+                stdout=None if not quiet else subprocess.DEVNULL,
+                stderr=None if not quiet else subprocess.DEVNULL,
+            )
+            return proc.returncode
+
+        proc = subprocess.Popen(
             list(cmd),
-            check=False,
-            stdout=None if not quiet else subprocess.DEVNULL,
-            stderr=None if not quiet else subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=None,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            bufsize=1,
         )
+        assert proc.stdout is not None
+        for line in proc.stdout:
+            try:
+                on_line(line.rstrip("\r\n"))
+            except Exception:  # noqa: BLE001 - never let a callback kill the download
+                pass
+        proc.stdout.close()
+        proc.wait()
         return proc.returncode
     except FileNotFoundError:
         return 127

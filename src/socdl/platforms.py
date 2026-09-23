@@ -50,8 +50,18 @@ PATTERNS = [
     ("reddit",    "post",       r"reddit\.com/r/[^/]+/comments/([A-Za-z0-9]+)"),
     ("reddit",    "post",       r"redd\.it/([A-Za-z0-9]+)"),
 
-    ("facebook",  "video",      r"(?:facebook|fb)\.com/(?:watch|reel|video)/?\??v?=?(\d+)?"),
-    ("facebook",  "post",       r"(?:facebook|fb)\.com/[^/]+/posts/([0-9A-Za-z]+)"),
+    # Facebook — order matters: more specific patterns first.
+    ("facebook",  "video",      r"fb\.watch/([A-Za-z0-9_-]+)"),
+    ("facebook",  "photo",      r"facebook\.com/photo(?:s)?(?:\.php)?/?\?(?:[^\s]*&)?fbid=(\d+)"),
+    ("facebook",  "post",       r"facebook\.com/permalink\.php/?\?(?:[^\s]*&)?story_fbid=(\d+)"),
+    ("facebook",  "video",      r"facebook\.com/(?:watch|video)(?:s)?/?\?(?:[^\s]*&)?v=(\d+)"),
+    ("facebook",  "reel",       r"facebook\.com/reel/(\d+)"),
+    ("facebook",  "video",      r"facebook\.com/[^/?]+/videos/(?:[^/?]+/)?(\d+)"),
+    ("facebook",  "video",      r"facebook\.com/[^/?]+/video(?:s)?/(\d+)"),
+    ("facebook",  "video",      r"facebook\.com/share/(?:r|v)/([A-Za-z0-9_-]+)"),
+    ("facebook",  "post",       r"facebook\.com/(?:groups/[^/]+|permalink\.php)/[^\s]*?(?:posts|permalink)/(\d+)"),
+    ("facebook",  "post",       r"facebook\.com/[^/?]+/posts/([0-9A-Za-z]+)"),
+    ("facebook",  "video",      r"facebook\.com/(?:watch|reel|video)/?\??v?=?(\d+)?"),
 ]
 
 
@@ -69,6 +79,8 @@ LABELS = {
     ("twitter",   "profile"): "Twitter/X profile",
     ("reddit",    "post"):    "Reddit post",
     ("facebook",  "video"):   "Facebook video",
+    ("facebook",  "reel"):    "Facebook reel",
+    ("facebook",  "photo"):   "Facebook photo",
     ("facebook",  "post"):    "Facebook post",
 }
 
@@ -97,6 +109,8 @@ def detect_platform(url: str) -> Detected:
         return Detected("tiktok", "video", None, "TikTok")
     if "youtube." in u_low or "youtu.be" in u_low:
         return Detected("youtube", "video", None, "YouTube")
+    if "facebook." in u_low or "fb.watch" in u_low or "fb.com" in u_low:
+        return Detected("facebook", "video", None, "Facebook")
 
     return Detected("unknown", "media", None, "Unknown")
 
