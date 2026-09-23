@@ -3,6 +3,21 @@
 All notable changes to **socdl** will be documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.5] — 2026-01-XX
+
+### Added
+- **Media info panel**: before each download, socdl now shows an info panel with
+  title, uploader, duration, date and engagement counters (**views, likes,
+  comments, shares/reposts**) whenever the source exposes them (YouTube, TikTok,
+  Facebook, X, Instagram, …). Missing fields are simply hidden.
+- **`/info <url>` command** to look up a link's details without downloading
+  (falls back to the last pasted URL when no argument is given).
+- Engagement counters are **persisted to history**: `/history` now shows
+  Views / Likes / Comments columns (only when data is available). Existing
+  databases are migrated automatically.
+- Best-effort metadata via a new `probe()` step in the engines/router: yt-dlp
+  (metadata extraction) and instaloader (Instagram like/comment counts).
+
 ## [0.1.4] — 2026-01-XX
 
 ### Added

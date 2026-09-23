@@ -154,6 +154,7 @@ socdl watch
 /queue run      Download everything in the queue
 /queue list     Show the queue
 /queue clear    Empty the queue
+/info [url]     Show likes/comments/shares for a link
 /watch          Start clipboard watcher
 /paste          Download URL from clipboard
 /clip [value]   Copy last result (or a value) to clipboard
@@ -165,7 +166,8 @@ socdl watch
 
 > **Tip:** paste several links at once and they are queued automatically — run
 > `/queue run` when you are ready. Every download shows a live progress bar with
-> speed and ETA.
+> speed and ETA, plus an info panel with views / likes / comments / shares when
+> the source provides them.
 
 ## ⚙️ Configuration
 

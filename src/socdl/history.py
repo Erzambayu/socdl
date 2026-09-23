@@ -21,6 +21,12 @@ class HistoryEntry(NamedTuple):
     status: str
     output_dir: str
     message: str
+    title: str = ""
+    uploader: str = ""
+    view_count: Optional[int] = None
+    like_count: Optional[int] = None
+    comment_count: Optional[int] = None
+    share_count: Optional[int] = None
 
 
 def db_path() -> Path:
@@ -53,19 +59,51 @@ def init() -> None:
             )
             """
         )
+        _migrate(c)
         c.commit()
 
 
+_MEDIA_COLUMNS = {
+    "title": "TEXT DEFAULT ''",
+    "uploader": "TEXT DEFAULT ''",
+    "view_count": "INTEGER",
+    "like_count": "INTEGER",
+    "comment_count": "INTEGER",
+    "share_count": "INTEGER",
+}
+
+
+def _migrate(c: sqlite3.Connection) -> None:
+    """Add media-info columns to pre-existing databases (idempotent)."""
+    existing = {row[1] for row in c.execute("PRAGMA table_info(downloads)")}
+    for name, decl in _MEDIA_COLUMNS.items():
+        if name not in existing:
+            c.execute(f"ALTER TABLE downloads ADD COLUMN {name} {decl}")
+
+
+_SELECT_COLUMNS = (
+    "id, timestamp, platform, kind, url, engine, status, output_dir, message, "
+    "title, uploader, view_count, like_count, comment_count, share_count"
+)
+
+
 def record(*, platform: str, kind: str, url: str, engine: str,
-           status: str, output_dir: str, message: str = "") -> None:
+           status: str, output_dir: str, message: str = "",
+           title: str = "", uploader: str = "",
+           view_count: Optional[int] = None, like_count: Optional[int] = None,
+           comment_count: Optional[int] = None,
+           share_count: Optional[int] = None) -> None:
     init()
     with _conn() as c:
         c.execute(
             """INSERT INTO downloads
-               (timestamp, platform, kind, url, engine, status, output_dir, message)
-               VALUES (?,?,?,?,?,?,?,?)""",
+               (timestamp, platform, kind, url, engine, status, output_dir,
+                message, title, uploader, view_count, like_count,
+                comment_count, share_count)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (datetime.now().isoformat(timespec="seconds"),
-             platform, kind, url, engine, status, output_dir, message),
+             platform, kind, url, engine, status, output_dir, message,
+             title, uploader, view_count, like_count, comment_count, share_count),
         )
         c.commit()
 
@@ -75,14 +113,14 @@ def recent(limit: int = 20, platform: Optional[str] = None) -> list[HistoryEntry
     with _conn() as c:
         if platform:
             rows = c.execute(
-                """SELECT id, timestamp, platform, kind, url, engine, status, output_dir, message
-                   FROM downloads WHERE platform=? ORDER BY id DESC LIMIT ?""",
+                f"""SELECT {_SELECT_COLUMNS}
+                    FROM downloads WHERE platform=? ORDER BY id DESC LIMIT ?""",
                 (platform, limit),
             ).fetchall()
         else:
             rows = c.execute(
-                """SELECT id, timestamp, platform, kind, url, engine, status, output_dir, message
-                   FROM downloads ORDER BY id DESC LIMIT ?""",
+                f"""SELECT {_SELECT_COLUMNS}
+                    FROM downloads ORDER BY id DESC LIMIT ?""",
                 (limit,),
             ).fetchall()
     return [HistoryEntry(*r) for r in rows]

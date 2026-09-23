@@ -61,6 +61,7 @@ def print_help_table() -> None:
     tbl.add_row("/history", t("cmd_help_history"))
     tbl.add_row("/stats",   t("cmd_help_stats"))
     tbl.add_row("/queue",   t("cmd_help_queue"))
+    tbl.add_row("/info",    t("cmd_help_info"))
     tbl.add_row("/watch",   t("cmd_help_watch"))
     tbl.add_row("/paste",   t("cmd_help_paste"))
     tbl.add_row("/clip",    t("cmd_help_clip"))
@@ -110,19 +111,37 @@ def print_history(rows: Iterable) -> None:
     if not rows:
         console.print(f"[muted]{t('hist_empty')}[/muted]")
         return
+    # Only show the engagement columns when at least one row has data.
+    show_counts = any(
+        getattr(r, "like_count", None) is not None
+        or getattr(r, "comment_count", None) is not None
+        or getattr(r, "view_count", None) is not None
+        for r in rows
+    )
     tbl = Table(title=t("hist_title"), title_style="brand", border_style="muted")
     tbl.add_column(t("hist_col_when"),     style="muted", no_wrap=True)
     tbl.add_column(t("hist_col_platform"), style="accent")
-    tbl.add_column(t("hist_col_url"),      style="value", overflow="fold", max_width=60)
+    tbl.add_column(t("hist_col_url"),      style="value", overflow="fold", max_width=48)
+    if show_counts:
+        tbl.add_column(t("info_views"),    style="accent", justify="right", no_wrap=True)
+        tbl.add_column(t("info_likes"),    style="ok", justify="right", no_wrap=True)
+        tbl.add_column(t("info_comments"), style="accent", justify="right", no_wrap=True)
     tbl.add_column(t("hist_col_status"),   style="ok")
     for r in rows:
         status_style = "ok" if r.status == "success" else "err"
-        tbl.add_row(
+        cells = [
             r.timestamp.replace("T", " "),
             r.platform,
             r.url,
-            f"[{status_style}]{r.status}[/{status_style}]",
-        )
+        ]
+        if show_counts:
+            cells += [
+                fmt_count(getattr(r, "view_count", None)),
+                fmt_count(getattr(r, "like_count", None)),
+                fmt_count(getattr(r, "comment_count", None)),
+            ]
+        cells.append(f"[{status_style}]{r.status}[/{status_style}]")
+        tbl.add_row(*cells)
     console.print(tbl)
 
 
@@ -194,6 +213,91 @@ def print_queue(items: Iterable) -> None:
     console.print(tbl)
 
 
+def fmt_count(n) -> str:
+    """Compact count, e.g. 950 -> '950', 1200 -> '1.2K', 3_400_000 -> '3.4M'."""
+    if n is None:
+        return "?"
+    try:
+        n = int(n)
+    except (TypeError, ValueError):
+        return "?"
+    neg = n < 0
+    n = abs(n)
+    if n < 1000:
+        out = str(n)
+    elif n < 1_000_000:
+        out = f"{n / 1000:.1f}K"
+    elif n < 1_000_000_000:
+        out = f"{n / 1_000_000:.1f}M"
+    else:
+        out = f"{n / 1_000_000_000:.1f}B"
+    return f"-{out}" if neg else out
+
+
+def fmt_duration(seconds) -> str:
+    """Format a duration in seconds as 'm:ss' or 'h:mm:ss'."""
+    if seconds is None:
+        return "?"
+    try:
+        total = int(seconds)
+    except (TypeError, ValueError):
+        return "?"
+    if total < 0:
+        return "?"
+    h, rem = divmod(total, 3600)
+    m, s = divmod(rem, 60)
+    if h:
+        return f"{h}:{m:02d}:{s:02d}"
+    return f"{m}:{s:02d}"
+
+
+def fmt_date(value: str) -> str:
+    """Turn 'YYYYMMDD' into 'YYYY-MM-DD'; pass anything else through."""
+    if not value:
+        return ""
+    v = str(value)
+    if len(v) == 8 and v.isdigit():
+        return f"{v[:4]}-{v[4:6]}-{v[6:]}"
+    return v
+
+
+def print_media_info(info: "object") -> None:
+    """Render a MediaInfo object as an info panel with counters."""
+    lines = Text()
+
+    def row(label: str, value: str, style: str = "value") -> None:
+        if value:
+            lines.append(f"{label:<10}", style="label")
+            lines.append(f"{value}\n", style=style)
+
+    row(t("info_title_field"), getattr(info, "title", ""))
+    row(t("info_uploader"), getattr(info, "uploader", ""))
+    row(t("info_duration"), fmt_duration(getattr(info, "duration", None))
+        if getattr(info, "duration", None) else "")
+    row(t("info_date"), fmt_date(getattr(info, "upload_date", "")))
+
+    # Counters, only when present.
+    counters = [
+        (t("info_views"), getattr(info, "view_count", None), "accent"),
+        (t("info_likes"), getattr(info, "like_count", None), "ok"),
+        (t("info_comments"), getattr(info, "comment_count", None), "accent"),
+        (t("info_shares"), getattr(info, "share_count", None), "brand"),
+        (t("info_reposts"), getattr(info, "repost_count", None), "brand"),
+    ]
+    present = [(lbl, val, sty) for lbl, val, sty in counters if val is not None]
+    for lbl, val, sty in present:
+        row(lbl, fmt_count(val), sty)
+
+    if not lines.plain.strip():
+        console.print(f"[muted]{t('info_unavailable')}[/muted]")
+        return
+
+    console.print(
+        Panel(lines, title=f"[brand]{t('info_title')}[/brand]",
+              border_style="muted", padding=(0, 1))
+    )
+
+
 def prompt_url() -> str:
     """Read a line from the user, styled. Flushes any pending output first."""
     console.file.flush()
@@ -220,7 +324,9 @@ def muted(msg: str) -> None: notice(msg, "muted")
 
 __all__ = [
     "console", "print_banner", "kv", "hr", "print_help_table",
-    "print_history", "print_stats", "print_queue", "prompt_url", "blank",
+    "print_history", "print_stats", "print_queue", "print_media_info",
+    "prompt_url", "blank",
     "notice", "ok", "warn", "err", "muted",
     "fmt_bytes", "fmt_speed", "fmt_eta", "make_progress",
+    "fmt_count", "fmt_duration", "fmt_date",
 ]

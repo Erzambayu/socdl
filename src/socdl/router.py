@@ -3,9 +3,10 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Optional
 
 from .config import Config
-from .engines import EngineResult, GalleryDLEngine, InstaloaderEngine, YtDlpEngine
+from .engines import EngineResult, GalleryDLEngine, InstaloaderEngine, MediaInfo, YtDlpEngine
 from .platforms import Detected
 
 
@@ -73,4 +74,23 @@ def download(url: str, det: Detected, cfg: Config, progress_cb=None,
     return last
 
 
-__all__ = ["download", "engine_chain"]
+def probe(url: str, det: Detected, cfg: Config) -> Optional[MediaInfo]:
+    """Fetch link metadata (likes/comments/shares/views/etc.) without downloading.
+
+    Best-effort: tries each engine in the chain that supports metadata and
+    returns the first non-empty result, or None if nothing could be fetched.
+    """
+    for name in engine_chain(det):
+        engine = ENGINE_MAP[name]()
+        if not engine.is_available():
+            continue
+        try:
+            info = engine.probe(url, cfg)
+        except Exception:  # noqa: BLE001 - metadata must never break a download
+            continue
+        if info is not None and not info.is_empty():
+            return info
+    return None
+
+
+__all__ = ["download", "probe", "engine_chain"]

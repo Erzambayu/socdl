@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
 from ..config import Config
-from ..platforms import Detected
-from .base import BaseEngine, EngineResult, run_subprocess
+from ..platforms import Detected, detect_platform
+from .base import BaseEngine, EngineResult, MediaInfo, run_subprocess
 
 
 class InstaloaderEngine(BaseEngine):
@@ -19,6 +20,40 @@ class InstaloaderEngine(BaseEngine):
         if self.should_run_in_process():
             return self._download_in_process(url, out_dir, det, cfg)
         return self._download_subprocess(url, out_dir, det, cfg)
+
+    # -- metadata -----------------------------------------------------------
+    def probe(self, url: str, cfg: Config) -> Optional[MediaInfo]:
+        """Fetch like/comment counts for an Instagram post (best-effort)."""
+        try:
+            import instaloader  # type: ignore
+        except ImportError:
+            return None
+
+        target = self._target_arg(detect_platform(url))
+        if target is None or target[0] != "post":
+            return None
+
+        try:
+            loader = instaloader.Instaloader(quiet=True, save_metadata=False)
+            if cfg.instagram_login:
+                try:
+                    loader.load_session_from_file(cfg.instagram_login)
+                except Exception:  # noqa: BLE001
+                    pass
+            post = instaloader.Post.from_shortcode(loader.context, target[1])
+        except Exception:  # noqa: BLE001 - metadata is best-effort
+            return None
+
+        return MediaInfo(
+            engine=self.name,
+            title=(post.caption or "").strip().splitlines()[0] if post.caption else "",
+            uploader=post.owner_username,
+            duration=float(post.video_duration) if post.is_video and post.video_duration else None,
+            upload_date=post.date_utc.strftime("%Y%m%d") if post.date_utc else "",
+            like_count=int(post.likes) if post.likes is not None else None,
+            comment_count=int(post.comments) if post.comments is not None else None,
+            view_count=int(post.video_view_count) if post.is_video and post.video_view_count else None,
+        )
 
     # -- CLI args shared by both modes --------------------------------------
     @staticmethod

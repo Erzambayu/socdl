@@ -18,7 +18,7 @@ import shutil
 import subprocess
 import sys
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
@@ -67,6 +67,80 @@ MODULE_ALIAS = {
     "gallery-dl": "gallery_dl",
     "instaloader": "instaloader",
 }
+
+
+@dataclass
+class MediaInfo:
+    """Best-effort metadata about a link, gathered before downloading.
+
+    All counters are optional because no single engine/site exposes every
+    field — ``None`` means "not available", which the UI simply hides.
+    """
+
+    engine: str = ""
+    title: str = ""
+    uploader: str = ""
+    duration: Optional[float] = None       # seconds
+    upload_date: str = ""                  # YYYYMMDD or ISO
+    view_count: Optional[int] = None
+    like_count: Optional[int] = None
+    comment_count: Optional[int] = None
+    share_count: Optional[int] = None
+    repost_count: Optional[int] = None
+    extra: dict = field(default_factory=dict)
+
+    @property
+    def has_counts(self) -> bool:
+        return any(v is not None for v in (
+            self.view_count, self.like_count, self.comment_count,
+            self.share_count, self.repost_count,
+        ))
+
+    def is_empty(self) -> bool:
+        return not any((
+            self.title, self.uploader, self.has_counts,
+            self.duration, self.upload_date,
+        ))
+
+
+# Alias some sites use for shares/reposts; map them onto one field.
+_SHARE_KEYS = ("share_count", "repost_count", "retweet_count", "repost")
+
+
+def media_info_from_ytdlp(info: dict, engine: str = "yt-dlp") -> MediaInfo:
+    """Build a MediaInfo from a yt-dlp info dict (best-effort)."""
+    def _int(*keys) -> Optional[int]:
+        for k in keys:
+            v = info.get(k)
+            if v is None:
+                continue
+            try:
+                return int(v)
+            except (TypeError, ValueError):
+                continue
+        return None
+
+    share = _int(*_SHARE_KEYS)
+    repost = _int("repost_count", "retweet_count")
+    duration = info.get("duration")
+    try:
+        duration = float(duration) if duration is not None else None
+    except (TypeError, ValueError):
+        duration = None
+
+    return MediaInfo(
+        engine=engine,
+        title=str(info.get("title") or "").strip(),
+        uploader=str(info.get("uploader") or info.get("channel")
+                     or info.get("uploader_id") or "").strip(),
+        duration=duration,
+        upload_date=str(info.get("upload_date") or "").strip(),
+        view_count=_int("view_count", "play_count"),
+        like_count=_int("like_count"),
+        comment_count=_int("comment_count"),
+        share_count=share,
+        repost_count=repost,
+    )
 
 
 def find_executable(name: str) -> Optional[list[str]]:
@@ -166,3 +240,12 @@ class BaseEngine:
 
     def base_cmd(self) -> Optional[list[str]]:
         return self.find_command()
+
+    # -- metadata -----------------------------------------------------------
+    def probe(self, url: str, cfg) -> Optional[MediaInfo]:
+        """Fetch metadata for `url` without downloading.
+
+        Best-effort: return None when unsupported or the fetch fails. Engines
+        that can't provide metadata inherit this no-op.
+        """
+        return None

@@ -16,6 +16,7 @@ from . import config as cfgmod
 from .i18n import set_lang, t
 from .platforms import detect_platform
 from .router import download as route_download
+from .router import probe as route_probe
 from .ui import blank as ui_blank
 from .ui import (
     console,
@@ -32,6 +33,7 @@ from .ui import (
     print_banner,
     print_help_table,
     print_history,
+    print_media_info,
     print_queue,
     print_stats,
     prompt_url,
@@ -86,6 +88,15 @@ def _maybe_notify_update() -> None:
 
 
 # ---------------------------------------------------------------------------
+def _fetch_and_show_info(url: str, det, cfg: cfgmod.Config):
+    """Probe link metadata and render the info panel. Returns MediaInfo|None."""
+    muted(t("info_fetching"))
+    info = route_probe(url, det, cfg)
+    if info is not None:
+        print_media_info(info)
+    return info
+
+
 def _handle_url(url: str, cfg: cfgmod.Config) -> bool:
     url = url.strip().rstrip(",;")
     det = detect_platform(url)
@@ -97,6 +108,8 @@ def _handle_url(url: str, cfg: cfgmod.Config) -> bool:
 
     if det.platform == "unknown":
         warn(t("unknown_platform"))
+
+    info = _fetch_and_show_info(url, det, cfg)
 
     with make_progress() as progress:
         task = progress.add_task(f"{t('downloading')}...", start=True,
@@ -150,6 +163,12 @@ def _handle_url(url: str, cfg: cfgmod.Config) -> bool:
             status="success" if result.ok else "failed",
             output_dir=str(result.output_dir),
             message=result.message,
+            title=(info.title if info else ""),
+            uploader=(info.uploader if info else ""),
+            view_count=(info.view_count if info else None),
+            like_count=(info.like_count if info else None),
+            comment_count=(info.comment_count if info else None),
+            share_count=(info.share_count if info else None),
         )
     return result.ok
 
@@ -298,6 +317,27 @@ def _handle_command(cmd: str, arg: str, cfg: cfgmod.Config, state: "_Interaction
     # --- stats ---
     if cmd == "stats":
         print_stats(history.stats())
+        return True
+
+    # --- info [url] ---
+    if cmd in ("info", "meta"):
+        value = arg.strip() or state.last_url or ""
+        if not value:
+            warn(t("cmd_info_empty"))
+            return True
+        urls = _extract_urls(value)
+        if not urls:
+            warn(t("cmd_info_usage"))
+            return True
+        for u in urls:
+            det = detect_platform(u)
+            hr()
+            kv(t("platform"), det.label)
+            kv(t("kind"),     det.kind)
+            kv(t("url"),      u)
+            info = _fetch_and_show_info(u, det, cfg)
+            if info is None:
+                muted(t("info_unavailable"))
         return True
 
     # --- open [path] ---

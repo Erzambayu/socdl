@@ -1,12 +1,21 @@
 """yt-dlp engine wrapper (subprocess or in-process)."""
 from __future__ import annotations
 
+import json
+import subprocess
 from pathlib import Path
 from typing import Optional
 
 from ..config import Config
 from ..platforms import Detected
-from .base import BaseEngine, EngineResult, ProgressInfo, run_subprocess
+from .base import (
+    BaseEngine,
+    EngineResult,
+    MediaInfo,
+    ProgressInfo,
+    media_info_from_ytdlp,
+    run_subprocess,
+)
 from .ffmpeg import ffmpeg_dir
 
 
@@ -122,6 +131,64 @@ class YtDlpEngine(BaseEngine):
         if self.should_run_in_process():
             return self._download_in_process(url, out_dir, det, cfg, progress)
         return self._download_subprocess(url, out_dir, det, cfg, progress)
+
+    # -- metadata -----------------------------------------------------------
+    def probe(self, url: str, cfg: Config) -> Optional[MediaInfo]:
+        if self.should_run_in_process():
+            return self._probe_in_process(url, cfg)
+        return self._probe_subprocess(url, cfg)
+
+    def _probe_subprocess(self, url: str, cfg: Config) -> Optional[MediaInfo]:
+        cmd = self.find_command()
+        if cmd is None:
+            return None
+        args = [*cmd, "--no-warnings", "--skip-download", "--dump-single-json",
+                "--no-playlist"]
+        if cfg.cookies_from_browser:
+            args += ["--cookies-from-browser", cfg.cookies_from_browser]
+        args.append(url)
+
+        try:
+            proc = subprocess.run(
+                args, check=False, capture_output=True,
+                text=True, encoding="utf-8", errors="replace", timeout=45,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+        if proc.returncode != 0 or not proc.stdout.strip():
+            return None
+        try:
+            info = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            return None
+        return media_info_from_ytdlp(info, self.name)
+
+    def _probe_in_process(self, url: str, cfg: Config) -> Optional[MediaInfo]:
+        try:
+            import yt_dlp  # type: ignore
+        except ImportError:
+            return None
+        opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "skip_download": True,
+            "noplaylist": True,
+        }
+        if cfg.cookies_from_browser:
+            opts["cookiesfrombrowser"] = (cfg.cookies_from_browser,)
+        loc = ffmpeg_dir()
+        if loc:
+            opts["ffmpeg_location"] = loc
+        try:
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+        except Exception:  # noqa: BLE001 - metadata is best-effort
+            return None
+        if not isinstance(info, dict):
+            return None
+        if info.get("_type") == "playlist" and info.get("entries"):
+            info = next((e for e in info["entries"] if e), info)
+        return media_info_from_ytdlp(info, self.name)
 
     # -- progress helpers ---------------------------------------------------
     @staticmethod
