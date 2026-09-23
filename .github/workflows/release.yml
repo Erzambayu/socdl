@@ -123,7 +123,43 @@ jobs:
       - name: List artifacts
         run: find artifacts -type f | sort
 
-      - name: Create GitHub Release
+      # Build the release body from CHANGELOG.md so every release always
+      # carries human-written notes. Falls back to auto-generated notes when
+      # no matching section exists.
+      - name: Build release notes from CHANGELOG.md
+        shell: bash
+        run: |
+          set -e
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION="${TAG#v}"
+          BODY_FILE="$RUNNER_TEMP/release_body.md"
+          if python3 scripts/changelog_for_version.py "$VERSION" > "$BODY_FILE"; then
+            echo "release body sourced from CHANGELOG.md:"
+            cat "$BODY_FILE"
+            echo "BODY_SOURCE=changelog" >> "$GITHUB_ENV"
+          else
+            echo "no changelog section for $VERSION; using generated notes"
+            echo "BODY_SOURCE=generated" >> "$GITHUB_ENV"
+          fi
+          echo "BODY_FILE=$BODY_FILE" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release (from CHANGELOG.md)
+        id: rel_changelog
+        if: env.BODY_SOURCE == 'changelog'
+        continue-on-error: true
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: socdl ${{ github.event.inputs.tag || github.ref_name }}
+          body_path: ${{ env.BODY_FILE }}
+          fail_on_unmatched_files: true
+          files: |
+            artifacts/socdl-windows-x64.exe/socdl-windows-x64.exe
+            artifacts/socdl-linux-x64/socdl-linux-x64
+            artifacts/python-dist/*
+
+      - name: Create GitHub Release (auto notes fallback)
+        if: env.BODY_SOURCE != 'changelog' || steps.rel_changelog.outcome == 'failure'
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}

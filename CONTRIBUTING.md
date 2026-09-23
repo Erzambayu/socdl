@@ -52,6 +52,34 @@ chore: bump yt-dlp minimum version
 - [ ] `CHANGELOG.md` updated under `[Unreleased]`
 - [ ] README updated if user-facing behavior changed
 
+## Releasing
+
+> **Rule: every release must ship release notes.** The release workflow fills the
+> GitHub Release body from the matching `CHANGELOG.md` section, so a release
+> without a changelog entry will silently fall back to auto-generated notes.
+
+1. Make sure `CHANGELOG.md` has a `## [x.y.z] — YYYY-MM-DD` section for the new
+   version (this becomes the release body).
+2. Bump the version in **both** `pyproject.toml` and `src/socdl/__init__.py`.
+3. Commit, then tag and push:
+
+   ```bash
+   git add -A
+   git commit -m "chore(release): vX.Y.Z"
+   git tag vX.Y.Z
+   git push origin main vX.Y.Z
+   ```
+
+4. The `Release` workflow builds the Windows/Linux binaries + wheel/sdist,
+   publishes to PyPI, and creates the GitHub Release with the changelog as its
+   body.
+
+To preview the release body locally:
+
+```bash
+python scripts/changelog_for_version.py X.Y.Z
+```
+
 ## Code of Conduct
 
 Be kind. Assume good intent. No harassment, discrimination, or spam.
