@@ -119,8 +119,12 @@ STRINGS = {
     "dep_installed": "{pkg} keinstall.",
     "dep_install_fail": "Gagal install {pkg}. Install manual dong.",
 
-    "ig_login_needed": "Konten Instagram butuh login. Set username IG di `socdl config` atau edit config.toml.",
+     "ig_login_needed": "Konten Instagram butuh login. Jalankan `socdl login` (atau `socdl login --cookies cookies.json`).",
     "fb_login_needed": "Facebook sering butuh login buat video. Set `cookies_from_browser` (mis. chrome) lewat `socdl config --set cookies_from_browser=chrome`.",
+    "login_interactive": "Login ke Instagram (username + password, lalu 2FA kalau diminta).",
+    "login_importing": "Impor cookie dari {file} ...",
+    "login_no_session": "Belum ada session Instagram tersimpan ({path}).",
+    "login_logged_out": "Session Instagram dihapus: {path}",
 
     "err_python_too_old": "Butuh Python 3.9+. Sekarang: {version}",
     "err_unexpected": "Error gak terduga: {err}",

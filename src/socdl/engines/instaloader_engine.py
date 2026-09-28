@@ -1,6 +1,8 @@
 """instaloader engine wrapper (Instagram specialist)."""
 from __future__ import annotations
 
+import json
+import pickle
 from pathlib import Path
 from typing import Optional
 
@@ -8,10 +10,202 @@ from ..config import Config
 from ..platforms import Detected, detect_platform
 from .base import BaseEngine, EngineResult, MediaInfo, run_subprocess
 
+# Cookies that carry the login. They are read from a file the user supplies and
+# written to the local session file; none of their values are ever logged or
+# included in any message.
+REQUIRED_COOKIES = ("sessionid", "csrftoken")
+
+
+def _parse_cookie_export(raw: str) -> list[tuple[str, str]]:
+    """Read cookies from a browser-extension export.
+
+    Supports the JSON array shape (EditThisCookie, Get cookies.txt, etc.) and
+    Netscape ``cookies.txt``. Returns ``[(name, value), ...]`` for Instagram only.
+    """
+    text = raw.strip()
+    if not text:
+        return []
+
+    if text[0] in "[{":
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError:
+            return []
+        if isinstance(data, dict):
+            data = data.get("cookies", [])
+        if not isinstance(data, list):
+            return []
+        out: list[tuple[str, str]] = []
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            name = item.get("name")
+            value = item.get("value")
+            domain = item.get("domain", "")
+            if not name or value is None:
+                continue
+            if domain and "instagram.com" not in str(domain):
+                continue
+            out.append((str(name), str(value)))
+        return out
+
+    # Netscape format: domain \t flag \t path \t secure \t expiry \t name \t value
+    out = []
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        parts = line.split("\t")
+        if len(parts) < 7:
+            continue
+        domain, _flag, _path, _secure, _expiry, name, value = parts[:7]
+        if "instagram.com" in domain:
+            out.append((name, value))
+    return out
+
+
+def _username_from_cookies(pairs) -> str:
+    """Best-effort username from a session (falls back to a placeholder)."""
+    get = dict(pairs).get
+    return get("ds_user_id") or get("ds_user") or "socdl"
+
 
 class InstaloaderEngine(BaseEngine):
     name = "instaloader"
     module = "instaloader"
+
+    @staticmethod
+    def default_session_path() -> Path:
+        """Where the reusable Instagram session cookie file lives."""
+        from ..config import data_dir
+
+        return data_dir() / "instagram.session"
+
+    @staticmethod
+    def login(session_path: Path, username: str = "") -> tuple[bool, str]:
+        """Log into Instagram interactively and persist the session to `session_path`.
+
+        Returns ``(ok, message)``. With an empty `username` instaloader prompts
+        for credentials interactively; otherwise it uses the given username.
+        """
+        try:
+            import instaloader  # type: ignore
+        except ImportError:
+            return False, "instaloader is not installed (pip install instaloader)"
+
+        session_path.parent.mkdir(parents=True, exist_ok=True)
+        loader = instaloader.Instaloader(
+            quiet=False,
+            save_metadata=False,
+            download_comments=False,
+            download_geotags=False,
+            download_videos=False,
+            download_pictures=False,
+        )
+        loader.login(username or None, interactive=True)
+        return InstaloaderEngine._persist(loader, session_path)
+
+    @staticmethod
+    def import_cookies(cookie_file: Path, session_path: Path) -> tuple[bool, str]:
+        """Build a session file from exported Instagram cookies.
+
+        Accepts the two formats browser extensions actually export:
+        a JSON array of cookie objects, or Netscape ``cookies.txt``.
+        """
+        cookie_file = cookie_file.expanduser()
+        if not cookie_file.exists():
+            return False, f"cookie file not found: {cookie_file}"
+        try:
+            raw = cookie_file.read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            return False, f"cannot read {cookie_file}: {exc}"
+
+        pairs = _parse_cookie_export(raw)
+        if not pairs:
+            return False, f"no Instagram cookies found in {cookie_file}"
+
+        names = {name for name, _ in pairs}
+        missing = [name for name in REQUIRED_COOKIES if name not in names]
+        if missing:
+            return False, (
+                f"missing {', '.join(repr(m) for m in missing)} in the export - "
+                "these cookies are not a logged-in Instagram session. Log into "
+                "instagram.com in your browser first, then re-export."
+            )
+
+        try:
+            import instaloader  # type: ignore
+        except ImportError:
+            return False, "instaloader is not installed (pip install instaloader)"
+
+        loader = instaloader.Instaloader(
+            quiet=True,
+            save_metadata=False,
+            download_comments=False,
+            download_geotags=False,
+            download_videos=False,
+            download_pictures=False,
+        )
+        username = _username_from_cookies(pairs)
+        try:
+            for name, value in pairs:
+                loader.context._session.cookies.set(
+                    name, value, domain=".instagram.com", path="/"
+                )
+            loader.context.username = username
+            loader.context._session.headers.update(
+                {"X-CSRFToken": loader.context._session.cookies.get_dict()["csrftoken"]}
+            )
+        except Exception as exc:  # noqa: BLE001
+            return False, f"could not build session: {exc}"
+
+        ok_flag, message = InstaloaderEngine._persist(loader, session_path)
+        if ok_flag:
+            message += f" ({len(pairs)} cookies imported)"
+        return ok_flag, message
+
+    @staticmethod
+    def _persist(loader, session_path: Path) -> tuple[bool, str]:
+        """Write the loader's current cookies to `session_path` (pickle, instaloader's format)."""
+        try:
+            session_path.parent.mkdir(parents=True, exist_ok=True)
+            with session_path.open("wb") as fh:
+                pickle.dump(loader.save_session(), fh)
+        except Exception as exc:  # noqa: BLE001
+            return False, f"login ok but could not save session: {exc}"
+        return True, f"Session saved to {session_path}"
+
+    @staticmethod
+    def session_path_for(cfg: Config) -> Optional[Path]:
+        """Resolve which session file to use.
+
+        ``cfg.instagram_login`` wins when set. Otherwise fall back to the
+        default session file, but only when it actually exists, so an empty
+        config still means "anonymous".
+        """
+        if cfg.instagram_login:
+            return Path(cfg.instagram_login).expanduser()
+        default = InstaloaderEngine.default_session_path()
+        return default if default.exists() else None
+
+    @staticmethod
+    def apply_session(loader, cfg: Config) -> bool:
+        """Load the saved session into `loader`. Returns True if one was loaded.
+
+        instaloader's ``load_session_from_file`` takes a *username* as its first
+        argument (the filename is derived from it), so we pass the session data
+        directly instead.
+        """
+        session_path = InstaloaderEngine.session_path_for(cfg)
+        if session_path is None or not session_path.exists():
+            return False
+        try:
+            with session_path.open("rb") as fh:
+                data = pickle.load(fh)
+            username = _username_from_cookies(data.items()) if data else ""
+            loader.load_session(username, data)
+            return True
+        except Exception:  # noqa: BLE001 - session is an optimisation, never fatal
+            return False
 
     def download(self, url: str, out_dir: Path, det: Detected, cfg: Config,
                  progress=None) -> EngineResult:
@@ -35,11 +229,7 @@ class InstaloaderEngine(BaseEngine):
 
         try:
             loader = instaloader.Instaloader(quiet=True, save_metadata=False)
-            if cfg.instagram_login:
-                try:
-                    loader.load_session_from_file(cfg.instagram_login)
-                except Exception:  # noqa: BLE001
-                    pass
+            self.apply_session(loader, cfg)
             post = instaloader.Post.from_shortcode(loader.context, target[1])
         except Exception:  # noqa: BLE001 - metadata is best-effort
             return None
@@ -90,8 +280,10 @@ class InstaloaderEngine(BaseEngine):
             "--no-captions",
             "--quiet",
         ]
-        if cfg.instagram_login:
-            args += ["--login", cfg.instagram_login]
+        if self.session_path_for(cfg) is not None:
+            # The session is a pickle only instaloader's API can read, so the
+            # CLI has to run through the in-process engine to use it.
+            return self._download_in_process(url, out_dir, det, cfg)
 
         kind, value = target
         if kind == "post":
@@ -129,12 +321,7 @@ class InstaloaderEngine(BaseEngine):
             quiet=True,
         )
 
-        if cfg.instagram_login:
-            try:
-                L.load_session_from_file(cfg.instagram_login)
-            except Exception:  # noqa: BLE001
-                # no saved session; continue anonymously
-                pass
+        self.apply_session(L, cfg)
 
         kind, value = target
         try:

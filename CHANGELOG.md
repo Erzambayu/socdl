@@ -3,7 +3,43 @@
 All notable changes to **socdl** will be documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.1.5] — 2026-01-XX
+## [0.1.6] — 2026-09-28
+
+### Fixed
+- **Instagram posts and reels could not be downloaded at all (case-sensitivity
+  bug)**. URL detection matched its patterns against a *lowercased* copy of the
+  URL, so the captured shortcode came out lowercased (`ddrpu-qewtm`) while
+  Instagram shortcodes are case-sensitive (`DdrPU-QEwTm`). Instaloader therefore
+  looked up a shortcode that does not exist and every attempt failed with
+  "Fetching Post metadata failed" — which the fallback engine then reported as
+  "Instagram needs login", sending users down the wrong troubleshooting path.
+  Detection now matches the original URL case-insensitively, so the target keeps
+  its original casing.
+
+### Added
+- **`socdl login`** to create a reusable Instagram session, with two ways in:
+  - `socdl login --cookies cookies.json` — import cookies exported from a browser
+    (JSON array, a JSON object with a `cookies` key, or Netscape `cookies.txt`).
+    Only `instagram.com` cookies are kept; `sessionid` and `csrftoken` are
+    required.
+  - `socdl login --username you` — interactive instaloader login.
+  - `socdl login --status` shows whether a saved session exists;
+    `socdl logout` deletes it.
+- The session is stored as a pickle in the platform data directory
+  (`instagram.session`) and is reused automatically by both the in-process and
+  subprocess download paths, so private and age-gated posts resolve on the first
+  engine in the chain.
+
+### Changed
+- `Config.instagram_login` is now documented and treated strictly as a *session
+  file path*. It was previously passed to instaloader's
+  `load_session_from_file()`, whose first argument is a **username**, and to
+  `instaloader --login`, which likewise takes a username — so setting it never
+  loaded a session.
+- The login hint no longer points at `socdl config`, which only edits
+  configuration and never creates a session.
+
+## [0.1.5] — 2026-09-23
 
 ### Added
 - **Media info panel**: before each download, socdl now shows an info panel with
@@ -18,7 +54,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Best-effort metadata via a new `probe()` step in the engines/router: yt-dlp
   (metadata extraction) and instaloader (Instagram like/comment counts).
 
-## [0.1.4] — 2026-01-XX
+## [0.1.4] — 2026-09-23
 
 ### Added
 - **Real download progress bar**: a live bar with percentage, transferred/total
@@ -48,14 +84,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - In-process yt-dlp output is silenced while our own progress bar is active, so
   the two no longer interleave.
 
-## [0.1.3] — 2026-01-XX
+## [0.1.3] — 2026-09-17
 
 ### Changed
 - Bumped GitHub Actions to current majors to silence Node.js 20 deprecation
   warnings: `checkout` v7, `setup-python` v7, `upload-artifact` v7,
   `download-artifact` v8, `action-gh-release` v3.
 
-## [0.1.2] — 2026-01-XX
+## [0.1.2] — 2026-09-17
 
 ### Added
 - `/stats` command — summary of total / successful / failed downloads plus a per-platform breakdown.
@@ -68,13 +104,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `/open` (and `/config`) now report failures instead of silently doing nothing, and no longer stack output on top of the prompt.
 - `/stats` no longer crashes due to an unsupported `title_style` argument passed to Rich's `Panel`.
 
-## [0.1.1] — 2026-01-XX
+## [0.1.1] — 2026-09-17
 
 ### Changed
 - Enabled PyPI Trusted Publishing so tagged releases are automatically
   uploaded to <https://pypi.org/project/socdl/>.
 
-## [0.1.0] — 2026-01-XX
+## [0.1.0] — 2026-09-17
 
 ### Added
 - First public release.

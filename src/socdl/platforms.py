@@ -92,12 +92,16 @@ def detect_platform(url: str) -> Detected:
     u_low = u.lower()
 
     for platform, kind, pat in PATTERNS:
-        m = re.search(pat, u_low, re.IGNORECASE)
+        # Match against the ORIGINAL url (case-insensitively) so the captured
+        # target keeps its original casing. Instagram shortcodes are
+        # case-sensitive ("AbC-123" != "abc-123"), so lowercasing here would
+        # make every post/reel 404.
+        m = re.search(pat, u, re.IGNORECASE)
         if not m:
             continue
         target = m.group(1) if m.groups() else None
 
-        if platform == "instagram" and kind == "profile" and target in RESERVED_IG:
+        if platform == "instagram" and kind == "profile" and target and target.lower() in RESERVED_IG:
             continue
 
         label = LABELS.get((platform, kind), f"{platform} {kind}")

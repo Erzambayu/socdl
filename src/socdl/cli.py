@@ -13,6 +13,7 @@ import click
 
 from . import __version__, history, updater
 from . import config as cfgmod
+from .engines.instaloader_engine import InstaloaderEngine
 from .i18n import set_lang, t
 from .platforms import detect_platform
 from .router import download as route_download
@@ -42,7 +43,7 @@ from .ui import (
 
 URL_RE = re.compile(r"https?://\S+")
 
-SUBCOMMANDS = {"watch", "history", "config", "update", "detect"}
+SUBCOMMANDS = {"watch", "history", "config", "update", "detect", "login", "logout"}
 
 
 # ---------------------------------------------------------------------------
@@ -598,6 +599,54 @@ def cmd_config(cfg: cfgmod.Config, show: bool, reset: bool, kv_pairs: tuple[str,
         console.print(f"[muted]{cfgmod.config_path()}[/muted]")
         for k, v in cfg.to_dict().items():
             kv(k, str(v))
+
+
+@cli.command("login")
+@click.option("-c", "--cookies", "cookies_file", type=click.Path(exists=True, dir_okay=False),
+              default=None,
+              help="Import cookies exported from your browser (JSON or cookies.txt).")
+@click.option("-u", "--username", default=None, help="Instagram username (for interactive login).")
+@click.option("--status", is_flag=True, help="Only show whether a saved session exists.")
+@click.pass_obj
+def cmd_login(cfg: cfgmod.Config, cookies_file: Optional[str], username: Optional[str],
+              status: bool) -> None:
+    """Log into Instagram so private/age-gated posts can be downloaded."""
+    engine = InstaloaderEngine()
+    session_path = engine.session_path_for(cfg) or engine.default_session_path()
+
+    if status:
+        if session_path.exists():
+            ok(f"Instagram session found: {session_path}")
+        else:
+            muted(t("login_no_session", path=str(session_path)))
+        return
+
+    if cookies_file:
+        notice(t("login_importing", file=cookies_file))
+        ok_flag, message = engine.import_cookies(Path(cookies_file), session_path)
+        (ok if ok_flag else err)(message)
+        return
+
+    notice(t("login_interactive"))
+    ok_flag, message = engine.login(session_path, username or "")
+    (ok if ok_flag else err)(message)
+
+
+@cli.command("logout")
+@click.pass_obj
+def cmd_logout(cfg: cfgmod.Config) -> None:
+    """Delete the saved Instagram session."""
+    engine = InstaloaderEngine()
+    session_path = engine.session_path_for(cfg) or engine.default_session_path()
+    if not session_path.exists():
+        muted(t("login_no_session", path=str(session_path)))
+        return
+    try:
+        session_path.unlink()
+    except OSError as exc:
+        err(f"Could not delete {session_path}: {exc}")
+        return
+    ok(t("login_logged_out", path=str(session_path)))
 
 
 @cli.command("update")

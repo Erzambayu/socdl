@@ -72,3 +72,24 @@ def test_reserved_ig_paths_are_not_profiles():
     for path in ["explore", "reels", "stories", "accounts", "direct"]:
         det = detect_platform(f"https://www.instagram.com/{path}/")
         assert not (det.platform == "instagram" and det.kind == "profile"), path
+
+
+@pytest.mark.parametrize("url, target", [
+    ("https://www.instagram.com/p/DdrPU-QEwTm", "DdrPU-QEwTm"),
+    ("https://www.instagram.com/p/Ddq5pJPE0El", "Ddq5pJPE0El"),
+    ("https://www.instagram.com/reel/DdrPU-QEwTm/", "DdrPU-QEwTm"),
+    ("https://www.instagram.com/tv/DdrPU-QEwTm/", "DdrPU-QEwTm"),
+])
+def test_instagram_shortcode_case_is_preserved(url, target):
+    """Instagram shortcodes are case-sensitive; detection must not lowercase them.
+
+    Regression: matching patterns against a lowercased URL made every post and
+    reel 404, because instaloader looked up e.g. "ddrpu-qewtm" instead of
+    "DdrPU-QEwTm".
+    """
+    assert detect_platform(url).target == target
+
+
+def test_reserved_ig_path_check_is_case_insensitive():
+    det = detect_platform("https://www.instagram.com/Explore/")
+    assert not (det.platform == "instagram" and det.kind == "profile"), det

@@ -118,8 +118,12 @@ STRINGS = {
     "dep_installed": "{pkg} installed.",
     "dep_install_fail": "Failed to install {pkg}. Please install manually.",
 
-    "ig_login_needed": "Instagram content requires login. Configure IG username in `socdl config` or edit config.toml.",
+    "ig_login_needed": "Instagram content requires login. Run `socdl login` (or `socdl login --cookies cookies.json`).",
     "fb_login_needed": "Facebook often requires login for videos. Set `cookies_from_browser` (e.g. chrome) via `socdl config --set cookies_from_browser=chrome`.",
+    "login_interactive": "Logging into Instagram (username + password, then 2FA if prompted).",
+    "login_importing": "Importing cookies from {file} ...",
+    "login_no_session": "No saved Instagram session yet ({path}).",
+    "login_logged_out": "Instagram session deleted: {path}",
 
     "err_python_too_old": "Python 3.9+ is required. Current: {version}",
     "err_unexpected": "Unexpected error: {err}",

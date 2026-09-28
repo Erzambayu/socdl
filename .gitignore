@@ -49,5 +49,10 @@ htmlcov/
 history.db
 config.local.toml
 
+# Browser cookie exports must never be committed
+cookies.txt
+cookies*.json
+*cookies*.txt
+
 # OS
 Thumbs.db
