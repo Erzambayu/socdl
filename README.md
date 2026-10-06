@@ -1,9 +1,14 @@
 <div align="center">
 
-# socdl
+# socdl — Social Media Video & Photo Downloader CLI
 
-**Social media downloader for humans.**
-_Instagram · TikTok · YouTube · Twitter/X · Reddit · Facebook_
+**Download videos and photos from Instagram, TikTok, YouTube, Twitter/X, Reddit and Facebook from your terminal.**
+
+socdl is a free, open-source command-line downloader for Windows, Linux and macOS.
+Save Instagram Reels and carousel posts, TikTok videos, YouTube videos and other
+supported social media content directly to your computer. It combines yt-dlp,
+Instaloader and gallery-dl with batch downloads, a clipboard watcher and an
+English or Bahasa Indonesia interface.
 
 [![PyPI](https://img.shields.io/pypi/v/socdl.svg?color=blue)](https://pypi.org/project/socdl/)
 [![Python](https://img.shields.io/pypi/pyversions/socdl.svg)](https://pypi.org/project/socdl/)
@@ -13,6 +18,11 @@ _Instagram · TikTok · YouTube · Twitter/X · Reddit · Facebook_
 _Read this in another language: [🇮🇩 Bahasa Indonesia](#-bahasa-indonesia)_
 
 </div>
+
+Download the [latest Windows and Linux binaries](https://github.com/Erzambayu/socdl/releases/latest)
+or [install the Python package from PyPI](https://pypi.org/project/socdl/).
+No self-hosted server is needed; downloads run locally. Some content requires
+login or browser cookies, and availability depends on the source platform.
 
 ---
 
@@ -281,7 +291,11 @@ MIT © [Erzam Bayu](https://github.com/Erzambayu)
 
 ## 🇮🇩 Bahasa Indonesia
 
-**socdl** — downloader sosmed yang ramah manusia. Instagram, TikTok, YouTube, Twitter/X, Reddit, Facebook — semua dari satu command.
+**socdl** adalah aplikasi command-line gratis dan open-source untuk download video
+dan foto dari Instagram, TikTok, YouTube, Twitter/X, Reddit, dan Facebook.
+Simpan Reels Instagram, postingan carousel, dan video sosmed langsung ke komputer
+Windows, Linux, atau macOS tanpa menyiapkan server. Tersedia download batch,
+pemantau clipboard, serta antarmuka bahasa indonesia dan inggris.
 
 ### Kenapa socdl?
 
