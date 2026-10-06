@@ -16,6 +16,13 @@ from .base import BaseEngine, EngineResult, MediaInfo, run_subprocess
 REQUIRED_COOKIES = ("sessionid", "csrftoken")
 
 
+def _is_instagram_domain(domain: object) -> bool:
+    if not isinstance(domain, str):
+        return False
+    host = domain.lower().lstrip(".")
+    return host == "instagram.com" or host.endswith(".instagram.com")
+
+
 def _parse_cookie_export(raw: str) -> list[tuple[str, str]]:
     """Read cookies from a browser-extension export.
 
@@ -44,7 +51,7 @@ def _parse_cookie_export(raw: str) -> list[tuple[str, str]]:
             domain = item.get("domain", "")
             if not name or value is None:
                 continue
-            if domain and "instagram.com" not in str(domain):
+            if not _is_instagram_domain(domain):
                 continue
             out.append((str(name), str(value)))
         return out
@@ -52,13 +59,15 @@ def _parse_cookie_export(raw: str) -> list[tuple[str, str]]:
     # Netscape format: domain \t flag \t path \t secure \t expiry \t name \t value
     out = []
     for line in text.splitlines():
+        if line.startswith("#HttpOnly_"):
+            line = line[len("#HttpOnly_"):]
         if not line.strip() or line.lstrip().startswith("#"):
             continue
         parts = line.split("\t")
         if len(parts) < 7:
             continue
         domain, _flag, _path, _secure, _expiry, name, value = parts[:7]
-        if "instagram.com" in domain:
+        if _is_instagram_domain(domain):
             out.append((name, value))
     return out
 
@@ -92,7 +101,9 @@ class InstaloaderEngine(BaseEngine):
         except ImportError:
             return False, "instaloader is not installed (pip install instaloader)"
 
-        session_path.parent.mkdir(parents=True, exist_ok=True)
+        username = username.strip() or input("Instagram username: ").strip()
+        if not username:
+            return False, "Instagram username is required"
         loader = instaloader.Instaloader(
             quiet=False,
             save_metadata=False,
@@ -101,8 +112,13 @@ class InstaloaderEngine(BaseEngine):
             download_videos=False,
             download_pictures=False,
         )
-        loader.login(username or None, interactive=True)
-        return InstaloaderEngine._persist(loader, session_path)
+        try:
+            loader.interactive_login(username)
+            return InstaloaderEngine._persist(loader, session_path)
+        except instaloader.exceptions.InstaloaderException:
+            return False, "Instagram login failed; check credentials or complete the browser challenge"
+        finally:
+            loader.close()
 
     @staticmethod
     def import_cookies(cookie_file: Path, session_path: Path) -> tuple[bool, str]:

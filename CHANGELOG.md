@@ -3,6 +3,15 @@
 All notable changes to **socdl** will be documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- Use Instaloader's supported interactive login API and prompt for a username
+  when omitted. Failed authentication does not save a session.
+- Preserve Netscape `#HttpOnly_` cookies when importing browser sessions.
+- Match cookie domains against Instagram's exact domain or its subdomains;
+  reject lookalike domains and JSON cookies without a domain.
+
 ## [0.1.6] — 2026-09-28
 
 ### Fixed

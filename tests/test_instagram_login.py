@@ -1,6 +1,10 @@
 """Tests for Instagram session handling (socdl login / cookies import)."""
 import json
 import pickle
+from unittest.mock import create_autospec
+
+import instaloader
+import pytest
 
 from socdl.config import Config
 from socdl.engines.instaloader_engine import (
@@ -50,6 +54,70 @@ def test_parse_garbage_returns_empty():
     assert _parse_cookie_export("") == []
     assert _parse_cookie_export("not json at all") == []
     assert _parse_cookie_export("[{bad json") == []
+
+
+@pytest.mark.parametrize("domain", [
+    "notinstagram.com", "instagram.com.example.org", "", None, 42,
+])
+def test_json_rejects_unrelated_or_missing_domains(domain):
+    raw = json.dumps([{"domain": domain, "name": "sessionid", "value": "fake"}])
+    assert _parse_cookie_export(raw) == []
+
+
+@pytest.mark.parametrize("domain", ["instagram.com", ".instagram.com", "WWW.INSTAGRAM.COM"])
+def test_both_formats_accept_instagram_domains(domain):
+    raw = json.dumps([{"domain": domain, "name": "sessionid", "value": "fake"}])
+    assert _parse_cookie_export(raw) == [("sessionid", "fake")]
+    raw = f"{domain}\tTRUE\t/\tTRUE\t0\tsessionid\tfake"
+    assert _parse_cookie_export(raw) == [("sessionid", "fake")]
+
+
+@pytest.mark.parametrize("domain", ["notinstagram.com", "instagram.com.example.org"])
+def test_netscape_rejects_lookalike_domains(domain):
+    raw = f"#HttpOnly_{domain}\tTRUE\t/\tTRUE\t0\tsessionid\tfake"
+    assert _parse_cookie_export(raw) == []
+
+
+def test_import_netscape_httponly_cookie(tmp_path):
+    source = tmp_path / "cookies.txt"
+    source.write_text(
+        "# Netscape HTTP Cookie File\n"
+        "#HttpOnly_.instagram.com\tTRUE\t/\tTRUE\t0\tsessionid\tfake-session\n"
+        ".instagram.com\tTRUE\t/\tTRUE\t0\tcsrftoken\tfake-csrf\n",
+        encoding="utf-8",
+    )
+    target = tmp_path / "out.session"
+    ok, message = InstaloaderEngine.import_cookies(source, target)
+    assert ok, message
+    assert pickle.loads(target.read_bytes())["sessionid"] == "fake-session"
+
+
+@pytest.mark.parametrize("username", ["example_user", ""])
+def test_interactive_login_uses_real_api_signature(monkeypatch, tmp_path, username):
+    loader = create_autospec(instaloader.Instaloader, instance=True)
+    loader.save_session.return_value = {"sessionid": "fake-session"}
+    monkeypatch.setattr(instaloader, "Instaloader", lambda **kwargs: loader)
+    monkeypatch.setattr("builtins.input", lambda prompt: "example_user")
+    target = tmp_path / "nested" / "out.session"
+    ok, message = InstaloaderEngine.login(target, username)
+    assert ok, message
+    loader.interactive_login.assert_called_once_with("example_user")
+    loader.login.assert_not_called()
+    loader.close.assert_called_once()
+    assert target.exists()
+
+
+def test_failed_login_does_not_persist_or_expose_error(monkeypatch, tmp_path):
+    loader = create_autospec(instaloader.Instaloader, instance=True)
+    loader.interactive_login.side_effect = instaloader.exceptions.BadCredentialsException("fake-secret")
+    monkeypatch.setattr(instaloader, "Instaloader", lambda **kwargs: loader)
+    target = tmp_path / "out.session"
+    ok, message = InstaloaderEngine.login(target, "example_user")
+    assert not ok
+    assert "fake-secret" not in message
+    assert not target.exists()
+    loader.save_session.assert_not_called()
+    loader.close.assert_called_once()
 
 
 def test_username_from_cookies_prefers_ds_user_id():
