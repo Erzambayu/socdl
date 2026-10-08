@@ -1,6 +1,6 @@
 STRINGS = {
     "app_tagline": "Downloader sosmed yang ramah manusia.",
-    "banner_subtitle": "Instagram | TikTok | YouTube | Twitter/X | Reddit | Facebook",
+    "banner_subtitle": "Instagram | TikTok | YouTube | Twitter/X | Reddit | Facebook | DoodStream",
 
     "prompt_url": "Paste link (atau command)",
     "prompt_hint": "Paste link buat download. Ketik /help buat command, /quit buat keluar.",

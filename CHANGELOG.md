@@ -3,6 +3,17 @@
 All notable changes to **socdl** will be documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.8] — 2026-10-08
+
+### Added
+- **DoodStream support.** `playmogo.com/d/<id>` (and `/e/<id>`) player links are
+  detected and downloaded directly by a dedicated engine. It resolves the
+  short-lived media URL itself instead of going through yt-dlp's generic
+  extractor, which the site blocks with a Cloudflare challenge.
+
+### Changed
+- README, banner, package description and keywords now mention DoodStream.
+
 ## [0.1.7] — 2026-10-06
 
 ### Fixed

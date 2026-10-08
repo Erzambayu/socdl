@@ -7,6 +7,7 @@ from typing import Optional
 
 from .config import Config
 from .engines import EngineResult, GalleryDLEngine, InstaloaderEngine, MediaInfo, YtDlpEngine
+from .engines.doodstream import DoodStreamEngine
 from .platforms import Detected
 
 
@@ -19,6 +20,8 @@ def _resolve_out_dir(det: Detected, cfg: Config) -> Path:
 
 
 def engine_chain(det: Detected) -> list[str]:
+    if det.platform == "doodstream":
+        return ["doodstream"]
     if det.platform == "instagram":
         # instaloader = best for posts/carousels (photo+video).
         # yt-dlp only handles the *video* items in a carousel, so we prefer
@@ -43,6 +46,7 @@ def engine_chain(det: Detected) -> list[str]:
 
 
 ENGINE_MAP = {
+    "doodstream":  DoodStreamEngine,
     "yt-dlp":      YtDlpEngine,
     "instaloader": InstaloaderEngine,
     "gallery-dl":  GalleryDLEngine,

@@ -1,6 +1,6 @@
 STRINGS = {
     "app_tagline": "Social media downloader for humans.",
-    "banner_subtitle": "Instagram | TikTok | YouTube | Twitter/X | Reddit | Facebook",
+    "banner_subtitle": "Instagram | TikTok | YouTube | Twitter/X | Reddit | Facebook | DoodStream",
 
     "prompt_url": "Paste a link (or command)",
     "prompt_hint": "Paste a link to download. Type /help for commands, /quit to exit.",

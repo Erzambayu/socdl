@@ -8,7 +8,7 @@ from typing import Optional
 
 @dataclass
 class Detected:
-    platform: str            # instagram | tiktok | youtube | twitter | reddit | facebook | unknown
+    platform: str            # instagram | tiktok | youtube | twitter | reddit | facebook | doodstream | unknown
     kind: str = "media"      # post | reel | story | profile | video | photo | playlist | media
     target: Optional[str] = None
     label: str = ""
@@ -22,10 +22,12 @@ class Detected:
             "twitter":   "Twitter",
             "reddit":    "Reddit",
             "facebook":  "Facebook",
+            "doodstream": "DoodStream",
         }.get(self.platform, "Other")
 
 
 PATTERNS = [
+    ("doodstream", "video", r"^https://(?:www\.)?playmogo\.com/(?:d|e)/([A-Za-z0-9]+)/?(?:\?[^#]*)?$"),
     ("instagram", "reel",       r"instagram\.com/(?:reel|reels)/([A-Za-z0-9_-]+)"),
     ("instagram", "reel",       r"instagram\.com/tv/([A-Za-z0-9_-]+)"),
     ("instagram", "story",      r"instagram\.com/stories/([A-Za-z0-9_.]+)/(\d+)"),
@@ -66,6 +68,7 @@ PATTERNS = [
 
 
 LABELS = {
+    ("doodstream", "video"): "DoodStream video",
     ("instagram", "post"):    "Instagram post",
     ("instagram", "reel"):    "Instagram reel",
     ("instagram", "story"):   "Instagram story",

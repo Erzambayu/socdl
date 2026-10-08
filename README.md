@@ -2,7 +2,7 @@
 
 # socdl — Social Media Video & Photo Downloader CLI
 
-**Download videos and photos from Instagram, TikTok, YouTube, Twitter/X, Reddit and Facebook from your terminal.**
+**Download videos and photos from Instagram, TikTok, YouTube, Twitter/X, Reddit, Facebook and DoodStream player pages from your terminal.**
 
 socdl is a free, open-source command-line downloader for Windows, Linux and macOS.
 Save Instagram Reels and carousel posts, TikTok videos, YouTube videos and other
@@ -29,6 +29,7 @@ login or browser cookies, and availability depends on the source platform.
 ## ✨ Highlights
 
 - **One command for every platform.** Paste any link — socdl picks the best engine automatically.
+- **DoodStream mirrors.** Playmogo-style `playmogo.com/d/<id>` and `/e/<id>` video links download directly.
 - **Handles carousels properly.** Instagram photo + video posts? All items downloaded, not just the video.
 - **Clean folders.** Organized by platform → uploader → dated filename. No mess.
 - **Beautiful TUI.** Rich progress bars, colored tables, banners. Feels good to use.
@@ -243,7 +244,8 @@ Supported browsers: `chrome`, `firefox`, `edge`, `brave`, `opera`, `vivaldi`.
 ├── TikTok/<username>/2024-01-15_video-title.mp4
 ├── YouTube/<uploader>/Video Title [XXXX].mp4
 ├── Twitter/<username>/2024-01-15_tweetid_1.jpg
-└── Reddit/<subreddit>/postid_01.jpg
+├── Reddit/<subreddit>/postid_01.jpg
+└── DoodStream/<video-id>.mp4
 ```
 
 ## 🌍 Supported sites
@@ -256,6 +258,7 @@ Core:
 - **Twitter/X** — tweets with images/video, threads
 - **Reddit** — posts (image, video, galleries)
 - **Facebook** — public videos and posts\*
+- **DoodStream** — videos behind `playmogo.com/d/<id>` (and `/e/<id>`) player pages
 
 \* May require login/cookies. See [Private content](#-private--login-required-content).
 
@@ -292,7 +295,8 @@ MIT © [Erzam Bayu](https://github.com/Erzambayu)
 ## 🇮🇩 Bahasa Indonesia
 
 **socdl** adalah aplikasi command-line gratis dan open-source untuk download video
-dan foto dari Instagram, TikTok, YouTube, Twitter/X, Reddit, dan Facebook.
+dan foto dari Instagram, TikTok, YouTube, Twitter/X, Reddit, Facebook, dan halaman
+player DoodStream.
 Simpan Reels Instagram, postingan carousel, dan video sosmed langsung ke komputer
 Windows, Linux, atau macOS tanpa menyiapkan server. Tersedia download batch,
 pemantau clipboard, serta antarmuka bahasa indonesia dan inggris.

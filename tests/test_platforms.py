@@ -4,6 +4,8 @@ from socdl.platforms import detect_platform
 
 
 @pytest.mark.parametrize("url, platform, kind", [
+    ("https://playmogo.com/d/yj2iqz70pnsx", "doodstream", "video"),
+    ("https://playmogo.com/e/yj2iqz70pnsx", "doodstream", "video"),
     ("https://www.instagram.com/p/DbHFIQxE5LC/?img_index=1", "instagram", "post"),
     ("https://www.instagram.com/reel/ABC123/",               "instagram", "reel"),
     ("https://www.instagram.com/reels/ABC123/",              "instagram", "reel"),
@@ -66,6 +68,23 @@ def test_facebook_engine_chain_is_ytdlp_only():
 
     det = detect_platform("https://www.facebook.com/reel/1044635761456156")
     assert engine_chain(det) == ["yt-dlp"]
+
+
+def test_doodstream_engine_chain():
+    from socdl.router import engine_chain
+
+    det = detect_platform("https://playmogo.com/d/yj2iqz70pnsx")
+    assert det.target == "yj2iqz70pnsx"
+    assert det.folder_name == "DoodStream"
+    assert engine_chain(det) == ["doodstream"]
+
+
+@pytest.mark.parametrize("url", [
+    "https://playmogo.com.evil.test/d/yj2iqz70pnsx",
+    "https://evil.test/?next=playmogo.com/d/yj2iqz70pnsx",
+])
+def test_doodstream_lookalikes_not_detected(url):
+    assert detect_platform(url).platform != "doodstream"
 
 
 def test_reserved_ig_paths_are_not_profiles():

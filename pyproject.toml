@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "socdl"
-version = "0.1.7"
-description = "A fast, friendly CLI to download photos & videos from Instagram, TikTok, YouTube, Twitter/X, Reddit, Facebook and more."
+version = "0.1.8"
+description = "A fast, friendly CLI to download photos & videos from Instagram, TikTok, YouTube, Twitter/X, Reddit, Facebook, DoodStream player pages and more."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
@@ -14,7 +14,8 @@ authors = [
 ]
 keywords = [
     "downloader", "instagram", "tiktok", "youtube", "twitter",
-    "reddit", "facebook", "yt-dlp", "instaloader", "gallery-dl", "cli", "tui"
+    "reddit", "facebook", "doodstream", "yt-dlp", "instaloader",
+    "gallery-dl", "cli", "tui"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
